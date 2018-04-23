@@ -14,7 +14,7 @@
  * Copyright (C) hdsdi3g for hd3g.tv 2018
  * 
 */
-package tv.hd3g.taskjob;
+package tv.hd3g.taskjob.broker;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -24,8 +24,6 @@ import java.util.UUID;
 import org.apache.log4j.Logger;
 
 import com.google.gson.JsonObject;
-
-import tv.hd3g.taskjob.broker.Broker;
 
 public final class Job {
 	private static Logger log = Logger.getLogger(Job.class);
@@ -51,13 +49,19 @@ public final class Job {
 	private int actual_progression_value;
 	private int max_progression_value;
 	
-	UUID init(String description, Class<?> context_type, JsonObject context_content, ArrayList<String> context_requirement_tags) {
+	UUID init(String description, String context_type, JsonObject context_content, ArrayList<String> context_requirement_tags) {
 		this.description = description;
 		
 		key = UUID.randomUUID();
 		
-		this.context_type = context_type.getName();
+		this.context_type = context_type;
+		if (context_type == null) {
+			throw new NullPointerException("\"context_type\" can't to be null");
+		}
 		this.context_content = context_content;
+		if (context_content == null) {
+			this.context_content = new JsonObject();
+		}
 		this.context_requirement_tags = context_requirement_tags;
 		
 		status = TaskStatus.WAITING;
@@ -108,7 +112,7 @@ public final class Job {
 		return broker.getJobsByUUID(this, relatives_sub_jobs);
 	}
 	
-	Job addSubJob(String description, Class<?> context_type, JsonObject context_content, ArrayList<String> context_requirement_tags) {
+	Job addSubJob(String description, String context_type, JsonObject context_content, ArrayList<String> context_requirement_tags) {
 		Job sub_job = new Job();
 		UUID new_uuid = sub_job.setLinkedJob(key).init(description, context_type, context_content, context_requirement_tags);
 		
@@ -125,12 +129,16 @@ public final class Job {
 		return sub_job;
 	}
 	
-	synchronized void switchToError(Exception e) {
+	synchronized void switchToError(Throwable e) {
 		last_error_message = e.getMessage();
 		switchStatus(TaskStatus.ERROR);
 	}
 	
 	synchronized void switchStatus(TaskStatus new_status) {
+		if (status.canSwitchTo(new_status) == false) {
+			throw new RuntimeException("Can't switch status from " + status + " to " + new_status);
+		}
+		
 		status = new_status;
 	}
 	
@@ -138,6 +146,9 @@ public final class Job {
 		return context_content;
 	}
 	
+	/**
+	 * @return never null
+	 */
 	public ArrayList<String> getContextRequirementTags() {
 		if (context_requirement_tags == null) {
 			return new ArrayList<>(Collections.emptyList());
@@ -149,4 +160,7 @@ public final class Job {
 		return context_type;
 	}
 	
+	public TaskStatus getStatus() {
+		return status;
+	}
 }

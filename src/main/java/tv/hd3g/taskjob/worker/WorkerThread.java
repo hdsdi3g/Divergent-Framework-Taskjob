@@ -21,9 +21,9 @@ import java.util.concurrent.Executor;
 
 import org.apache.log4j.Logger;
 
-import tv.hd3g.taskjob.Job;
-import tv.hd3g.taskjob.TaskStatus;
 import tv.hd3g.taskjob.broker.Broker;
+import tv.hd3g.taskjob.broker.Job;
+import tv.hd3g.taskjob.broker.TaskStatus;
 
 /**
  * Execute a Worker in a Thread
@@ -59,6 +59,7 @@ class WorkerThread extends Thread {
 	}
 	
 	/**
+	 * Will always started even if it has some errors or if it's stopped.
 	 * @return this
 	 */
 	public WorkerThread setAfterProcess(Runnable afterProcess) {
@@ -100,6 +101,9 @@ class WorkerThread extends Thread {
 		}
 	}
 	
+	/**
+	 * Non blocking
+	 */
 	void wantToStop() {
 		want_to_stop = true;
 	}

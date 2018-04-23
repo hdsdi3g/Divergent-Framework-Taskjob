@@ -24,7 +24,7 @@ import tv.hd3g.taskjob.worker.Engine;
 
 public interface Queue {
 	
-	public void registerEngine(Engine engine, int worker_count);
+	public void registerEngine(Engine engine);
 	
 	public void unRegisterEngine(Engine engine);
 	

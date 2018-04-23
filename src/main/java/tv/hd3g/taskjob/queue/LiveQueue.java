@@ -34,7 +34,7 @@ import org.apache.log4j.Logger;
 import tv.hd3g.taskjob.broker.Broker;
 import tv.hd3g.taskjob.worker.Engine;
 
-public class LiveQueue implements Queue {
+public class LiveQueue implements Queue { // TODO do tests
 	private static Logger log = Logger.getLogger(LiveQueue.class);
 	
 	private final Broker broker;
@@ -44,7 +44,7 @@ public class LiveQueue implements Queue {
 	
 	private final ThreadPoolExecutor maintenance_pool;
 	
-	public LiveQueue(Broker broker, String base_thread_name) {
+	public LiveQueue(Broker broker) {
 		this.broker = broker;
 		if (broker == null) {
 			throw new NullPointerException("\"broker\" can't to be null");
@@ -70,26 +70,18 @@ public class LiveQueue implements Queue {
 		});
 	}
 	
-	public void registerEngine(Engine engine, int worker_count) {
+	/**
+	 * Engines can set anytime the same context_type.
+	 */
+	public void registerEngine(Engine engine) {
 		if (isPendingStop()) {
 			throw new RuntimeException("Can't add engine " + engine + " for a stopped queue");
 		}
 		
 		synchronized (engines) {
 			if (engines.contains(engine)) {
-				throw new RuntimeException("Can't add engine " + engine + ", it was previousely added");
+				return;
 			}
-			
-			List<String> previouly_added_handled_context_types = engines.stream().flatMap(eng -> {
-				return eng.getAllHandledContextTypes().stream();
-			}).filter(previouly_added_c_type -> {
-				return engine.getAllHandledContextTypes().contains(previouly_added_c_type);
-			}).collect(Collectors.toList());
-			
-			if (previouly_added_handled_context_types.isEmpty() == false) {
-				throw new RuntimeException("Can't add engine " + engine + ", some handled_context_types was previouly added: " + previouly_added_handled_context_types);
-			}
-			
 			engines.add(engine);
 		}
 		
@@ -117,11 +109,11 @@ public class LiveQueue implements Queue {
 		
 		synchronized (engines) {
 			engines.forEach(engine -> {
-				engine.stopAll();
+				engine.stopCurrentAll();
 			});
 			
 			List<CompletableFuture<Void>> cf = engines.stream().map(engine -> {
-				return engine.stopAll(executor);
+				return engine.stopCurrentAll(executor);
 			}).collect(Collectors.toList());
 			
 			return CompletableFuture.allOf(cf.toArray(new CompletableFuture[cf.size()]));
@@ -158,7 +150,11 @@ public class LiveQueue implements Queue {
 			});
 		};
 		
-		broker.getNextActions(getActualEnginesContextTypes(), (context_type, context_r_tags) -> {
+		broker.getNextActions(getActualEnginesContextTypes(), () -> {
+			return engines.stream().mapToInt(engine -> {
+				return engine.actualFreeWorkers();
+			}).sum();
+		}, (context_type, context_r_tags) -> {
 			return engines.stream().filter(engine -> {
 				return engine.getAllHandledContextTypes().contains(context_type);
 			}).filter(engineHasFreeWorkers).allMatch(engine -> {

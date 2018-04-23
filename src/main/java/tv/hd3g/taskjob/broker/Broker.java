@@ -20,18 +20,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.BiPredicate;
+import java.util.function.IntSupplier;
 import java.util.function.Predicate;
 
-import tv.hd3g.taskjob.Job;
-import tv.hd3g.taskjob.TaskStatus;
+import com.google.gson.JsonObject;
 
 public interface Broker {// TODO implements broker
 	
 	List<Job> getJobsByUUID(Job job, List<UUID> keys);
 	
-	public Job createJob(String description, String external_reference, Object context, ArrayList<String> context_requirement_tags);
+	public Job createJob(String description, String external_reference, JsonObject context, ArrayList<String> context_requirement_tags);
 	
-	public Job addAction(Job reference, String description, Object context, ArrayList<String> context_requirement_tags);
+	public Job addSubJob(Job reference, String description, JsonObject context, ArrayList<String> context_requirement_tags);
 	
 	public List<Job> getAllJobs();
 	
@@ -44,12 +44,16 @@ public interface Broker {// TODO implements broker
 	/**
 	 * Must be atomic.
 	 * Use current pending Actions list, and starts, if needed, waiting jobs for create new pending Actions.
-	 * @param list_to_context_types: types that queue can handle actually
-	 * @param filterByContextTypeAndTags: if can select context_type -> context requirements tags
-	 * @param onFoundActionReadyToStart: selected and locked actions are presented to queue, and return true if action is really started.
+	 * @param list_to_context_types types that queue can handle actually
+	 * @param queue_capacity the avaliable slots for try job push to onFoundActionReadyToStart
+	 * @param filterByContextTypeAndTags if can select context_type -> context requirements tags
+	 * @param onFoundActionReadyToStart selected and locked actions are presented to queue, and return true if action is really started.
 	 */
-	public void getNextActions(List<String> list_to_context_types, BiPredicate<String, List<String>> filterByContextTypeAndTags, Predicate<Job> onFoundActionReadyToStart);
+	public void getNextActions(List<String> list_to_context_types, IntSupplier queue_capacity, BiPredicate<String, List<String>> filterByContextTypeAndTags, Predicate<Job> onFoundActionReadyToStart);
 	
+	/**
+	 * @param callback generaly linked by a queue
+	 */
 	public void onNewLocalJobsActivity(Runnable callback);
 	
 }

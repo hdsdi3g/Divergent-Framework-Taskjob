@@ -28,8 +28,9 @@ import java.util.stream.Collectors;
 
 import org.apache.log4j.Logger;
 
-import tv.hd3g.taskjob.Job;
 import tv.hd3g.taskjob.broker.Broker;
+import tv.hd3g.taskjob.broker.Job;
+import tv.hd3g.taskjob.broker.TaskStatus;
 
 /**
  * Factory for create specific workers on demand.
@@ -93,7 +94,7 @@ public final class Engine {
 	/**
 	 * non-blocking,
 	 */
-	public void stopAll() {
+	public void stopCurrentAll() {
 		runnables.stream().filter(t -> {
 			return t.isAlive();
 		}).forEach(t -> {
@@ -101,7 +102,7 @@ public final class Engine {
 		});
 	}
 	
-	public CompletableFuture<Void> stopAll(Executor executor) {
+	public CompletableFuture<Void> stopCurrentAll(Executor executor) {
 		List<CompletableFuture<Void>> cf = runnables.stream().filter(t -> {
 			return t.isAlive();
 		}).map(t -> {
@@ -118,6 +119,9 @@ public final class Engine {
 		return CompletableFuture.allOf(cf.toArray(new CompletableFuture[cf.size()]));
 	}
 	
+	/**
+	 * @return if some process are actually alive.
+	 */
 	public boolean isRunning() {
 		return runnables.stream().anyMatch(t -> {
 			return t.isAlive();
@@ -136,19 +140,16 @@ public final class Engine {
 	public boolean addProcess(Job job, Broker broker, Runnable onAfterProcess) {
 		if (all_handled_context_types.contains(job.getContextType()) == false) {
 			throw new RuntimeException("Stupid queue: you don't check context_type before send this job to me. My all_handled_context_types: " + all_handled_context_types + ", job: " + job);
-		} else if (job.getContextRequirementTags().containsAll(context_requirement_tags) == false) {
+		} else if (context_requirement_tags.containsAll(job.getContextRequirementTags()) == false) {
 			throw new RuntimeException("Stupid queue: you don't check context_requirement_tags before send this job to me. My context_requirement_tags: " + context_requirement_tags + ", job: " + job);
 		}
 		
 		WorkerThread w_t = new WorkerThread(base_thread_name + "_" + created_thread_count.getAndIncrement(), job, broker, createWorkerByContextType.apply(job.getContextType()));
 		try {
 			if (runnables.offer(w_t) == false) {
-				boolean clean_needed = runnables.removeIf(t -> {
+				runnables.removeIf(t -> {
 					return t.isAlive() == false;
 				});
-				if (clean_needed) {
-					log.warn("Found not-Alive theads: clean_needed");
-				}
 				
 				if (runnables.offer(w_t, 10, TimeUnit.MILLISECONDS) == false) {
 					return false;
@@ -157,6 +158,8 @@ public final class Engine {
 		} catch (InterruptedException e) {
 			throw new RuntimeException("Can't wait", e);
 		}
+		
+		broker.switchStatus(job, TaskStatus.PREPARING);
 		
 		w_t.setAfterProcess(() -> {
 			log.trace("Remove item " + w_t + " from runnables list");
