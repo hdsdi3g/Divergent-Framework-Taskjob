@@ -1,0 +1,7 @@
+target/
+desktop.ini
+.DS_Store
+Thumbs.db
+._sync_*.db*
+.owncloudsync.log
+.*.log.[0-99]
