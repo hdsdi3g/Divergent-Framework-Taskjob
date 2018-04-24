@@ -18,7 +18,7 @@ package tv.hd3g.taskjob.broker;
 
 public enum TaskStatus {
 	
-	// XXX set
+	// XXX broker set
 	CANCELED {
 		public boolean canSwitchTo(TaskStatus new_status) {
 			switch (new_status) {
@@ -36,8 +36,16 @@ public enum TaskStatus {
 				return true;
 			}
 		}
+		
+		public boolean statusSwitchShouldChangeJobStartDate() {
+			return false;
+		}
+		
+		public boolean statusSwitchShouldChangeJobEndDate() {
+			return true;
+		}
 	},
-	// XXX set
+	// XXX broker set
 	POSTPONED {
 		public boolean canSwitchTo(TaskStatus new_status) {
 			switch (new_status) {
@@ -54,6 +62,14 @@ public enum TaskStatus {
 			default:
 				return true;
 			}
+		}
+		
+		public boolean statusSwitchShouldChangeJobStartDate() {
+			return false;
+		}
+		
+		public boolean statusSwitchShouldChangeJobEndDate() {
+			return true;
 		}
 	},
 	STOPPING {
@@ -73,6 +89,14 @@ public enum TaskStatus {
 				return true;
 			}
 		}
+		
+		public boolean statusSwitchShouldChangeJobStartDate() {
+			return false;
+		}
+		
+		public boolean statusSwitchShouldChangeJobEndDate() {
+			return false;
+		}
 	},
 	STOPPED {
 		public boolean canSwitchTo(TaskStatus new_status) {
@@ -90,6 +114,14 @@ public enum TaskStatus {
 			default:
 				return true;
 			}
+		}
+		
+		public boolean statusSwitchShouldChangeJobStartDate() {
+			return false;
+		}
+		
+		public boolean statusSwitchShouldChangeJobEndDate() {
+			return true;
 		}
 	},
 	ERROR {
@@ -109,8 +141,16 @@ public enum TaskStatus {
 				return true;
 			}
 		}
+		
+		public boolean statusSwitchShouldChangeJobStartDate() {
+			return false;
+		}
+		
+		public boolean statusSwitchShouldChangeJobEndDate() {
+			return true;
+		}
 	},
-	// XXX set
+	// XXX broker set
 	PREPARING {
 		public boolean canSwitchTo(TaskStatus new_status) {
 			switch (new_status) {
@@ -127,6 +167,14 @@ public enum TaskStatus {
 			default:
 				return true;
 			}
+		}
+		
+		public boolean statusSwitchShouldChangeJobStartDate() {
+			return false;
+		}
+		
+		public boolean statusSwitchShouldChangeJobEndDate() {
+			return false;
 		}
 	},
 	WAITING {
@@ -146,6 +194,14 @@ public enum TaskStatus {
 				return true;
 			}
 		}
+		
+		public boolean statusSwitchShouldChangeJobStartDate() {
+			return false;
+		}
+		
+		public boolean statusSwitchShouldChangeJobEndDate() {
+			return false;
+		}
 	},
 	DONE {
 		public boolean canSwitchTo(TaskStatus new_status) {
@@ -163,6 +219,14 @@ public enum TaskStatus {
 			default:
 				return true;
 			}
+		}
+		
+		public boolean statusSwitchShouldChangeJobStartDate() {
+			return false;
+		}
+		
+		public boolean statusSwitchShouldChangeJobEndDate() {
+			return true;
 		}
 	},
 	PROCESSING {
@@ -182,8 +246,20 @@ public enum TaskStatus {
 				return true;
 			}
 		}
+		
+		public boolean statusSwitchShouldChangeJobStartDate() {
+			return true;
+		}
+		
+		public boolean statusSwitchShouldChangeJobEndDate() {
+			return false;
+		}
 	};
 	
 	public abstract boolean canSwitchTo(TaskStatus new_status);
+	
+	public abstract boolean statusSwitchShouldChangeJobStartDate();
+	
+	public abstract boolean statusSwitchShouldChangeJobEndDate();
 	
 }

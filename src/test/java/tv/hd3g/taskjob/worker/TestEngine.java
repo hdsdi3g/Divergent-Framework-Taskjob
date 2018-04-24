@@ -59,7 +59,7 @@ public class TestEngine extends TestCase {
 					assertEquals("test", referer.getContextType());
 					assertEquals(TaskStatus.PROCESSING, referer.getStatus());
 					assertFalse("Job was previously done", referer.getContextContent().has("done"));
-					referer.getContextContent().addProperty("done", true);
+					JobUtilityTest.addPropertyInContext(referer, "done", true);
 					
 					if (referer.getContextContent().has("sleep")) {
 						Thread.sleep(10);
@@ -117,8 +117,6 @@ public class TestEngine extends TestCase {
 	
 	private static final int CPU_COUNT = Runtime.getRuntime().availableProcessors();
 	
-	private static final Logger w_t_log = Logger.getLogger(WorkerThread.class);
-	
 	public void testMultiple() throws Exception {
 		CountDownLatch latch_end = new CountDownLatch(1);
 		AtomicReference<AssertionFailedError> failure = new AtomicReference<>();
@@ -129,7 +127,7 @@ public class TestEngine extends TestCase {
 					assertEquals("test", referer.getContextType());
 					assertEquals(TaskStatus.PROCESSING, referer.getStatus());
 					assertFalse("Job was previously done", referer.getContextContent().has("done"));
-					referer.getContextContent().addProperty("done", true);
+					JobUtilityTest.addPropertyInContext(referer, "done", true);
 				} catch (AssertionFailedError e) {
 					failure.set(e);
 					latch_end.countDown();
@@ -139,7 +137,7 @@ public class TestEngine extends TestCase {
 		
 		assertEquals(CPU_COUNT, engine.actualFreeWorkers());
 		
-		w_t_log.setLevel(Level.WARN);
+		Logger.getLogger(WorkerThread.class).setLevel(Level.WARN);
 		
 		List<Job> all_jobs = IntStream.range(0, CPU_COUNT * 1000).mapToObj(i -> {
 			return JobUtilityTest.createJob("Test-" + i, "test", createContext(false), null);
@@ -189,7 +187,7 @@ public class TestEngine extends TestCase {
 		Engine engine = new Engine(1, "Test", Arrays.asList("test"), c_type -> {
 			return (referer, broker, shouldStopProcessing) -> {
 				Thread.sleep(10);
-				referer.getContextContent().addProperty("done", true);
+				JobUtilityTest.addPropertyInContext(referer, "done", true);
 				
 				if (shouldStopProcessing.get() == false) {
 					Thread.sleep(10);
@@ -237,7 +235,7 @@ public class TestEngine extends TestCase {
 		Engine engine = new Engine(1, "Test", Arrays.asList("test"), c_type -> {
 			return (referer, broker, shouldStopProcessing) -> {
 				Thread.sleep(10);
-				referer.getContextContent().addProperty("done", true);
+				JobUtilityTest.addPropertyInContext(referer, "done", true);
 				
 				if (shouldStopProcessing.get() == false) {
 					Thread.sleep(10);
@@ -278,7 +276,7 @@ public class TestEngine extends TestCase {
 		
 		Engine engine = new Engine(1, "Test", Arrays.asList("test"), c_type -> {
 			return (referer, broker, shouldStopProcessing) -> {
-				referer.getContextContent().addProperty("done", true);
+				JobUtilityTest.addPropertyInContext(referer, "done", true);
 			};
 		});
 		

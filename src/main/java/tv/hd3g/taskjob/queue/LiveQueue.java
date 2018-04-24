@@ -34,7 +34,7 @@ import org.apache.log4j.Logger;
 import tv.hd3g.taskjob.broker.Broker;
 import tv.hd3g.taskjob.worker.Engine;
 
-public class LiveQueue implements Queue { // TODO do tests
+public class LiveQueue implements Queue {
 	private static Logger log = Logger.getLogger(LiveQueue.class);
 	
 	private final Broker broker;
@@ -98,8 +98,8 @@ public class LiveQueue implements Queue { // TODO do tests
 		return pending_stop;
 	}
 	
-	public boolean isStopped() {
-		return engines.stream().noneMatch(engine -> {
+	public boolean isRunning() {
+		return maintenance_pool.getActiveCount() > 0 | engines.stream().anyMatch(engine -> {
 			return engine.isRunning();
 		});
 	}
@@ -120,13 +120,20 @@ public class LiveQueue implements Queue { // TODO do tests
 		}
 	}
 	
-	public List<String> getActualEnginesContextTypes() {
+	/**
+	 * @param only_with_free_workers set false for all engines
+	 */
+	public List<String> getActualEnginesContextTypes(boolean only_with_free_workers) {
 		if (isPendingStop()) {
 			return Collections.emptyList();
 		}
 		
 		return engines.stream().filter(engine -> {
-			return engine.actualFreeWorkers() > 0;
+			if (only_with_free_workers) {
+				return engine.actualFreeWorkers() > 0;
+			} else {
+				return true;
+			}
 		}).flatMap(engine -> {
 			return engine.getAllHandledContextTypes().stream();
 		}).distinct().collect(Collectors.toList());
@@ -150,7 +157,7 @@ public class LiveQueue implements Queue { // TODO do tests
 			});
 		};
 		
-		broker.getNextActions(getActualEnginesContextTypes(), () -> {
+		broker.getNextActions(getActualEnginesContextTypes(true), () -> {
 			return engines.stream().mapToInt(engine -> {
 				return engine.actualFreeWorkers();
 			}).sum();
@@ -158,13 +165,13 @@ public class LiveQueue implements Queue { // TODO do tests
 			return engines.stream().filter(engine -> {
 				return engine.getAllHandledContextTypes().contains(context_type);
 			}).filter(engineHasFreeWorkers).allMatch(engine -> {
-				return context_r_tags.containsAll(engine.getContextRequirementTags());
+				return engine.getContextRequirementTags().containsAll(context_r_tags);
 			});
 		}, selected_action -> {
 			Optional<Engine> o_engine_potentially_free = engines.stream().filter(engine -> {
 				return engine.getAllHandledContextTypes().contains(selected_action.getContextType());
 			}).filter(engineHasFreeWorkers).filter(engine -> {
-				return selected_action.getContextRequirementTags().containsAll(engine.getContextRequirementTags());
+				return engine.getContextRequirementTags().containsAll(selected_action.getContextRequirementTags());
 			}).findFirst();
 			
 			if (o_engine_potentially_free.isPresent() == false) {

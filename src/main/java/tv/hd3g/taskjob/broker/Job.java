@@ -23,6 +23,7 @@ import java.util.UUID;
 
 import org.apache.log4j.Logger;
 
+import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonObject;
 
 public final class Job {
@@ -65,6 +66,7 @@ public final class Job {
 		this.context_requirement_tags = context_requirement_tags;
 		
 		status = TaskStatus.WAITING;
+		create_date = System.currentTimeMillis();
 		start_date = 0;
 		end_date = 0;
 		relatives_sub_jobs = new ArrayList<>();
@@ -75,7 +77,7 @@ public final class Job {
 	/**
 	 * @return this
 	 */
-	Job setExternalReference(String external_reference) {
+	synchronized Job setExternalReference(String external_reference) {
 		this.external_reference = external_reference;
 		return this;
 	}
@@ -83,7 +85,7 @@ public final class Job {
 	/**
 	 * @return this
 	 */
-	Job setLinkedJob(UUID linked_job) {
+	synchronized Job setLinkedJob(UUID linked_job) {
 		this.linked_job = linked_job;
 		return this;
 	}
@@ -99,9 +101,17 @@ public final class Job {
 	/**
 	 * @return this
 	 */
-	Job updateProgression(int actual_progression_value, int max_progression_value) {
+	synchronized Job updateProgression(int actual_progression_value, int max_progression_value) {
 		this.actual_progression_value = actual_progression_value;
 		this.max_progression_value = max_progression_value;
+		return this;
+	}
+	
+	/**
+	 * @return this
+	 */
+	synchronized Job setContextRequirementTags(ArrayList<String> context_requirement_tags) {
+		this.context_requirement_tags = context_requirement_tags;
 		return this;
 	}
 	
@@ -129,31 +139,61 @@ public final class Job {
 		return sub_job;
 	}
 	
-	synchronized void switchToError(Throwable e) {
+	/**
+	 * @return this
+	 */
+	synchronized Job switchToError(Throwable e) {
 		last_error_message = e.getMessage();
 		switchStatus(TaskStatus.ERROR);
+		return this;
 	}
 	
-	synchronized void switchStatus(TaskStatus new_status) {
+	/**
+	 * @return this
+	 */
+	synchronized Job switchStatus(TaskStatus new_status) {
 		if (status.canSwitchTo(new_status) == false) {
 			throw new RuntimeException("Can't switch status from " + status + " to " + new_status);
 		}
-		
 		status = new_status;
+		
+		if (status.statusSwitchShouldChangeJobStartDate()) {
+			start_date = System.currentTimeMillis();
+		}
+		if (status.statusSwitchShouldChangeJobEndDate()) {
+			end_date = System.currentTimeMillis();
+		}
+		
+		return this;
 	}
 	
+	/**
+	 * @return A deep copy
+	 */
 	public JsonObject getContextContent() {
-		return context_content;
+		return context_content.deepCopy();
+	}
+	
+	/**
+	 * @return this
+	 */
+	synchronized Job setContextContent(JsonObject context_content) {
+		this.context_content = context_content;
+		if (context_content == null) {
+			throw new NullPointerException("\"context_content\" can't to be null");
+		}
+		return this;
 	}
 	
 	/**
 	 * @return never null
 	 */
-	public ArrayList<String> getContextRequirementTags() {
+	public ImmutableList<String> getContextRequirementTags() {
 		if (context_requirement_tags == null) {
-			return new ArrayList<>(Collections.emptyList());
+			return ImmutableList.of();
 		}
-		return context_requirement_tags;
+		
+		return ImmutableList.copyOf(context_requirement_tags);
 	}
 	
 	public String getContextType() {

@@ -84,6 +84,33 @@ public class JobUtilityTest {
 		return job;
 	}
 	
+	/**
+	 * @return job
+	 */
+	public static Job addPropertyInContext(Job job, String key, boolean value) {
+		JsonObject jo = job.getContextContent();
+		jo.addProperty(key, value);
+		return job.setContextContent(jo);
+	}
+	
+	/**
+	 * @return job
+	 */
+	public static Job addPropertyInContext(Job job, String key, Number value) {
+		JsonObject jo = job.getContextContent();
+		jo.addProperty(key, value);
+		return job.setContextContent(jo);
+	}
+	
+	/**
+	 * @return job
+	 */
+	public static Job addPropertyInContext(Job job, String key, String value) {
+		JsonObject jo = job.getContextContent();
+		jo.addProperty(key, value);
+		return job.setContextContent(jo);
+	}
+	
 	public final static Broker broker = new Broker() {
 		
 		public void updateProgression(Job action, int actual_value, int max_value) {

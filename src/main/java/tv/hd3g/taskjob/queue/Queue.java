@@ -34,10 +34,10 @@ public interface Queue {
 	 */
 	public CompletableFuture<Void> prepareToStop(Executor executor);
 	
-	public boolean isStopped();
+	public boolean isRunning();
 	
 	public boolean isPendingStop();
 	
-	public List<String> getActualEnginesContextTypes();
+	public List<String> getActualEnginesContextTypes(boolean only_with_free_workers);
 	
 }
