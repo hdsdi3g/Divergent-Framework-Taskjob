@@ -19,9 +19,11 @@ package tv.hd3g.taskjob.broker;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -190,6 +192,18 @@ class JobStore {
 		});
 	}
 	
+	/**
+	 * Please dont output a stream: it will not be synchonised.
+	 * @param stream_processor function call is in internal lock.
+	 */
+	<T> T getFromJobs(Function<Stream<Job>, T> stream_processor) {
+		return syncRead(() -> {
+			return stream_processor.apply(jobs_by_uuid.keySet().stream().map(uuid -> {
+				return jobs_by_uuid.get(uuid);
+			}));
+		});
+	}
+	
 	void checkConsistency() {
 		if (jobs_by_uuid.size() != waiting_jobs.size() + done_jobs.size() + others_jobs.size()) {
 			throw new RuntimeException("Invalid lists sizes, jobs_by_uuid: " + jobs_by_uuid.size() + ", waiting_jobs: " + waiting_jobs.size() + ", done_jobs: " + done_jobs.size() + ", others_jobs: " + others_jobs.size());
@@ -227,6 +241,29 @@ class JobStore {
 			stream_processor.apply(task_list.stream().map(uuid -> {
 				return jobs_by_uuid.get(uuid);
 			})).collect(Collectors.toList()).stream().forEach(job -> {
+				if (log.isTraceEnabled()) {
+					log.trace("Remove job " + job);
+				}
+				jobs_by_uuid.remove(job.getKey());
+				task_list.remove(job.getKey());
+			});
+			
+			return null;
+		});
+	}
+	
+	/**
+	 * @param stream_processor (full_job_list_stream_to_filter, job_by_uuid_resolver) -> filtered stream to remove
+	 */
+	void computeAllAndRemove(BiFunction<Stream<Job>, Function<UUID, Job>, Stream<Job>> stream_processor) {
+		syncWrite(() -> {
+			Set<UUID> task_list = jobs_by_uuid.keySet();
+			
+			stream_processor.apply(task_list.stream().map(uuid -> {
+				return jobs_by_uuid.get(uuid);
+			}), uuid -> {
+				return jobs_by_uuid.get(uuid);
+			}).collect(Collectors.toList()).stream().forEach(job -> {
 				if (log.isTraceEnabled()) {
 					log.trace("Remove job " + job);
 				}

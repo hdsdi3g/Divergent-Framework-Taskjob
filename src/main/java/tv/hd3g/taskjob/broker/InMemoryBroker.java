@@ -17,12 +17,14 @@
 package tv.hd3g.taskjob.broker;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
 import java.util.function.IntSupplier;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.apache.log4j.Logger;
 
@@ -49,60 +51,125 @@ public class InMemoryBroker implements Broker {
 	 * @return this
 	 */
 	InMemoryBroker flush() {
-		// TODO Auto-generated method stub
+		store.computeAllAndRemove((stream, uuid_resolver) -> {
+			return stream.filter(job -> {
+				if (job.getStatus().isDone()) {
+					if (job.getStatus().equals(TaskStatus.DONE)) {
+						/**
+						 * Search the dependant linked job.
+						 */
+						if (job.getLinkedJob() != null) {
+							Job linked_job = uuid_resolver.apply(job.getLinkedJob());
+							if (linked_job != null) {
+								if (linked_job.getStatus().isDone() == false) {
+									/**
+									 * Protect sub-tasks if main task is not yet processed.
+									 */
+									return false;
+								}
+							}
+						}
+						
+						return job.isTooOld(done_jobs_retention_time);
+					} else if (job.getStatus().equals(TaskStatus.ERROR)) {
+						return job.isTooOld(error_jobs_retention_time);
+					}
+				} else if (job.getStatus().equals(TaskStatus.POSTPONED)) {
+					/**
+					 * Postponed task will not expire.
+					 */
+					return false;
+				} else if (job.getStatus().equals(TaskStatus.WAITING)) {
+					/**
+					 * Search the dependant linked job.
+					 */
+					if (job.getLinkedJob() != null) {
+						Job linked_job = uuid_resolver.apply(job.getLinkedJob());
+						if (linked_job == null) {
+							/**
+							 * Main task was deleted... delete this sub task.
+							 */
+							return true;
+						}
+					}
+				}
+				return job.isTooOld(abandoned_jobs_retention_time);
+			});
+		});
+		
 		return this;
 	}
 	
-	@Override
-	public List<Job> getJobsByUUID(Job job, List<UUID> keys) {
-		// TODO Auto-generated method stub
-		return null;
+	public List<Job> getJobsByUUID(List<UUID> keys) {
+		if (keys == null) {
+			return Collections.emptyList();
+		}
+		if (keys.isEmpty()) {
+			return Collections.emptyList();
+		}
+		
+		return keys.stream().map(uuid -> {
+			return store.getByUUID(uuid);
+		}).filter(job -> {
+			return job != null;
+		}).collect(Collectors.toList());
+	}
+	
+	public List<Job> getAllJobs() {
+		return store.getFromJobs(stream -> {
+			return stream.collect(Collectors.toList());
+		});
+	}
+	
+	public void updateProgression(Job job, int actual_value, int max_value) {
+		boolean ok = store.update(() -> {
+			return job.updateProgression(actual_value, max_value).getKey();
+		});
+		if (ok == false) {
+			log.warn("Can't update job " + job);
+		}
+	}
+	
+	public void switchToError(Job job, Throwable e) {
+		boolean ok = store.update(() -> {
+			return job.switchToError(e).getKey();
+		});
+		if (ok == false) {
+			log.warn("Can't update job " + job);
+		}
+	}
+	
+	public void switchStatus(Job job, TaskStatus new_status) {
+		boolean ok = store.update(() -> {
+			return job.switchStatus(new_status).getKey();
+		});
+		if (ok == false) {
+			log.warn("Can't update job " + job);
+		}
 	}
 	
 	@Override
 	public Job createJob(String description, String external_reference, JsonObject context, ArrayList<String> context_requirement_tags) {
+		// max_job_count
 		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	@Override
 	public Job addSubJob(Job reference, String description, JsonObject context, ArrayList<String> context_requirement_tags) {
+		// max_job_count
 		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	@Override
-	public List<Job> getAllJobs() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public void updateProgression(Job action, int actual_value, int max_value) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public void switchToError(Job job, Throwable e) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public void switchStatus(Job job, TaskStatus new_status) {
+	public void onNewLocalJobsActivity(Runnable callback) {
 		// TODO Auto-generated method stub
 		
 	}
 	
 	@Override
 	public void getNextActions(List<String> list_to_context_types, IntSupplier queue_capacity, BiPredicate<String, List<String>> filterByContextTypeAndTags, Predicate<Job> onFoundActionReadyToStart) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public void onNewLocalJobsActivity(Runnable callback) {
 		// TODO Auto-generated method stub
 		
 	}

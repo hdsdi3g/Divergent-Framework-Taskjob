@@ -37,12 +37,16 @@ public enum TaskStatus {
 			}
 		}
 		
-		public boolean statusSwitchShouldChangeJobStartDate() {
+		boolean statusSwitchShouldChangeJobStartDate() {
 			return false;
 		}
 		
-		public boolean statusSwitchShouldChangeJobEndDate() {
+		boolean statusSwitchShouldChangeJobEndDate() {
 			return true;
+		}
+		
+		boolean isDone() {
+			return false;
 		}
 	},
 	// XXX broker set
@@ -64,12 +68,16 @@ public enum TaskStatus {
 			}
 		}
 		
-		public boolean statusSwitchShouldChangeJobStartDate() {
+		boolean statusSwitchShouldChangeJobStartDate() {
 			return false;
 		}
 		
-		public boolean statusSwitchShouldChangeJobEndDate() {
+		boolean statusSwitchShouldChangeJobEndDate() {
 			return true;
+		}
+		
+		boolean isDone() {
+			return false;
 		}
 	},
 	STOPPING {
@@ -90,12 +98,16 @@ public enum TaskStatus {
 			}
 		}
 		
-		public boolean statusSwitchShouldChangeJobStartDate() {
+		boolean statusSwitchShouldChangeJobStartDate() {
 			return false;
 		}
 		
-		public boolean statusSwitchShouldChangeJobEndDate() {
+		boolean statusSwitchShouldChangeJobEndDate() {
 			return false;
+		}
+		
+		boolean isDone() {
+			return true;
 		}
 	},
 	STOPPED {
@@ -116,11 +128,15 @@ public enum TaskStatus {
 			}
 		}
 		
-		public boolean statusSwitchShouldChangeJobStartDate() {
+		boolean statusSwitchShouldChangeJobStartDate() {
 			return false;
 		}
 		
-		public boolean statusSwitchShouldChangeJobEndDate() {
+		boolean statusSwitchShouldChangeJobEndDate() {
+			return true;
+		}
+		
+		boolean isDone() {
 			return true;
 		}
 	},
@@ -142,11 +158,15 @@ public enum TaskStatus {
 			}
 		}
 		
-		public boolean statusSwitchShouldChangeJobStartDate() {
+		boolean statusSwitchShouldChangeJobStartDate() {
 			return false;
 		}
 		
-		public boolean statusSwitchShouldChangeJobEndDate() {
+		boolean statusSwitchShouldChangeJobEndDate() {
+			return true;
+		}
+		
+		boolean isDone() {
 			return true;
 		}
 	},
@@ -169,12 +189,16 @@ public enum TaskStatus {
 			}
 		}
 		
-		public boolean statusSwitchShouldChangeJobStartDate() {
+		boolean statusSwitchShouldChangeJobStartDate() {
 			return false;
 		}
 		
-		public boolean statusSwitchShouldChangeJobEndDate() {
+		boolean statusSwitchShouldChangeJobEndDate() {
 			return false;
+		}
+		
+		boolean isDone() {
+			return true;
 		}
 	},
 	WAITING {
@@ -195,11 +219,15 @@ public enum TaskStatus {
 			}
 		}
 		
-		public boolean statusSwitchShouldChangeJobStartDate() {
+		boolean statusSwitchShouldChangeJobStartDate() {
 			return false;
 		}
 		
-		public boolean statusSwitchShouldChangeJobEndDate() {
+		boolean statusSwitchShouldChangeJobEndDate() {
+			return false;
+		}
+		
+		boolean isDone() {
 			return false;
 		}
 	},
@@ -221,11 +249,15 @@ public enum TaskStatus {
 			}
 		}
 		
-		public boolean statusSwitchShouldChangeJobStartDate() {
+		boolean statusSwitchShouldChangeJobStartDate() {
 			return false;
 		}
 		
-		public boolean statusSwitchShouldChangeJobEndDate() {
+		boolean statusSwitchShouldChangeJobEndDate() {
+			return true;
+		}
+		
+		boolean isDone() {
 			return true;
 		}
 	},
@@ -247,19 +279,28 @@ public enum TaskStatus {
 			}
 		}
 		
-		public boolean statusSwitchShouldChangeJobStartDate() {
+		boolean statusSwitchShouldChangeJobStartDate() {
 			return true;
 		}
 		
-		public boolean statusSwitchShouldChangeJobEndDate() {
+		boolean statusSwitchShouldChangeJobEndDate() {
 			return false;
+		}
+		
+		boolean isDone() {
+			return true;
 		}
 	};
 	
 	public abstract boolean canSwitchTo(TaskStatus new_status);
 	
-	public abstract boolean statusSwitchShouldChangeJobStartDate();
+	abstract boolean statusSwitchShouldChangeJobStartDate();
 	
-	public abstract boolean statusSwitchShouldChangeJobEndDate();
+	abstract boolean statusSwitchShouldChangeJobEndDate();
+	
+	/**
+	 * @return false if task is not yet process. True if process is ok/stopped/in error/in process/preparing.
+	 */
+	abstract boolean isDone();
 	
 }

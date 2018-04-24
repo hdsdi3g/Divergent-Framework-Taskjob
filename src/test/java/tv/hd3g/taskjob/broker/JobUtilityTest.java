@@ -133,7 +133,7 @@ public class JobUtilityTest {
 			throw new RuntimeException("Not implemented");
 		}
 		
-		public List<Job> getJobsByUUID(Job job, List<UUID> keys) {
+		public List<Job> getJobsByUUID(List<UUID> keys) {
 			throw new RuntimeException("Not implemented");
 		}
 		
@@ -148,6 +148,7 @@ public class JobUtilityTest {
 		public Job addSubJob(Job reference, String description, JsonObject context, ArrayList<String> context_requirement_tags) {
 			throw new RuntimeException("Not implemented");
 		}
+		
 	};
 	
 }

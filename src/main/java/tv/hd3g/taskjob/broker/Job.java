@@ -119,7 +119,14 @@ public final class Job {
 		if (relatives_sub_jobs == null) {
 			return Collections.emptyList();
 		}
-		return broker.getJobsByUUID(this, relatives_sub_jobs);
+		return broker.getJobsByUUID(relatives_sub_jobs);
+	}
+	
+	ImmutableList<UUID> getRelativesJobsUUID() {
+		if (relatives_sub_jobs == null) {
+			return ImmutableList.of();
+		}
+		return ImmutableList.copyOf(relatives_sub_jobs);
 	}
 	
 	Job addSubJob(String description, String context_type, JsonObject context_content, ArrayList<String> context_requirement_tags) {
@@ -202,5 +209,16 @@ public final class Job {
 	
 	public TaskStatus getStatus() {
 		return status;
+	}
+	
+	/**
+	 * Use end_date or else create_date
+	 */
+	boolean isTooOld(long max_age_msec) {
+		if (end_date > 0) {
+			return end_date + max_age_msec < System.currentTimeMillis();
+		} else {
+			return create_date + max_age_msec < System.currentTimeMillis();
+		}
 	}
 }

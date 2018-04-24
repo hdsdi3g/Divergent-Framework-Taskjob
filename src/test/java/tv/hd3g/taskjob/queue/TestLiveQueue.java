@@ -71,7 +71,7 @@ public class TestLiveQueue extends TestCase {
 			// local_jobs_activity_callback = callback;
 		}
 		
-		public List<Job> getJobsByUUID(Job job, List<UUID> keys) {
+		public List<Job> getJobsByUUID(List<UUID> keys) {
 			throw new RuntimeException("Not implemented");
 		}
 		

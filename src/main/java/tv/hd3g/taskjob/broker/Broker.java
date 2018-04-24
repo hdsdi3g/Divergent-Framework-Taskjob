@@ -27,7 +27,7 @@ import com.google.gson.JsonObject;
 
 public interface Broker {// TODO implements broker
 	
-	List<Job> getJobsByUUID(Job job, List<UUID> keys);
+	List<Job> getJobsByUUID(List<UUID> keys);
 	
 	public Job createJob(String description, String external_reference, JsonObject context, ArrayList<String> context_requirement_tags);
 	
@@ -35,7 +35,7 @@ public interface Broker {// TODO implements broker
 	
 	public List<Job> getAllJobs();
 	
-	public void updateProgression(Job action, int actual_value, int max_value);
+	public void updateProgression(Job job, int actual_value, int max_value);
 	
 	public void switchToError(Job job, Throwable e);
 	
