@@ -16,6 +16,8 @@
 */
 package tv.hd3g.taskjob.broker;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -61,6 +63,8 @@ public class TestJobStore extends TestCase {
 			return stream.findFirst();
 		});
 		assertEquals(job, o_job.get());
+		
+		store.checkConsistency();
 	}
 	
 	public void testParallelPushPull() {
@@ -68,12 +72,18 @@ public class TestJobStore extends TestCase {
 		
 		JobStore store = new JobStore();
 		
+		/**
+		 * Test bulk simple put
+		 */
 		all_jobs.parallelStream().forEach(job -> {
 			assertTrue(store.put(job));
 		});
 		
 		assertEquals(all_jobs.size(), store.size());
 		
+		/**
+		 * Test bulk simple get
+		 */
 		all_jobs.parallelStream().forEach(job -> {
 			Job job_get = store.getByUUID(job.getKey());
 			assertNotNull(job_get);
@@ -88,6 +98,96 @@ public class TestJobStore extends TestCase {
 		all_waiting.parallelStream().forEach(job -> {
 			assertTrue(all_jobs_uuid.contains(job.getKey()));
 		});
+		
+		store.checkConsistency();
+		
+		/**
+		 * Test bulk simple update
+		 */
+		all_jobs.parallelStream().forEach(job -> {
+			store.update(() -> {
+				job.switchStatus(TaskStatus.POSTPONED);
+				return job.getKey();
+			});
+		});
+		
+		store.checkConsistency();
+		
+		/**
+		 * Test bulk update
+		 */
+		store.computeAndUpdate(TaskStatus.POSTPONED, stream -> {
+			return stream.limit(10);
+		}, job -> {
+			job.switchStatus(TaskStatus.WAITING);
+		});
+		
+		assertEquals(10, store.waitingJobCount());
+		
+		store.checkConsistency();
+		
+		/**
+		 * Test bulk read
+		 */
+		assertEquals(10, store.getFromJobs(TaskStatus.WAITING, stream -> stream.collect(Collectors.toList())).size());
+		
+		/**
+		 * Test bulk remove
+		 */
+		store.computeAndRemove(TaskStatus.POSTPONED, stream -> {
+			return stream.limit(10);
+		});
+		
+		assertEquals(all_jobs.size() - 10, store.size());
+		assertEquals(10, store.waitingJobCount());
+		
+		store.checkConsistency();
+	}
+	
+	public void testRandomPushPull() {
+		List<Job> all_jobs = IntStream.range(0, 1_000).mapToObj(i -> JobUtilityTest.createJob("Test", "Test", new JsonObject(), null)).collect(Collectors.toList());
+		List<Job> all_shuffle_jobs = new ArrayList<>(all_jobs);
+		Collections.shuffle(all_shuffle_jobs);
+		
+		JobStore store = new JobStore();
+		
+		Thread t_push = new Thread(() -> {
+			all_shuffle_jobs.stream().forEach(job -> {
+				store.put(job);
+			});
+			System.out.println("End: " + Thread.currentThread().getName());
+		}, "Push");
+		
+		Thread t_update = new Thread(() -> {
+			all_jobs.stream().forEach(job -> {
+				while (store.getByUUID(job.getKey()) == null) {
+					Thread.onSpinWait();
+				}
+				job.switchStatus(TaskStatus.POSTPONED);
+				store.update(() -> {
+					return job.getKey();
+				});
+			});
+			System.out.println("End: " + Thread.currentThread().getName());
+		}, "Update");
+		
+		Thread t_pull = new Thread(() -> {
+			while (store.getFromJobs(TaskStatus.POSTPONED, stream -> {
+				return (int) stream.count();
+			}) != all_jobs.size()) {
+				Thread.onSpinWait();
+			}
+			System.out.println("End: " + Thread.currentThread().getName());
+		}, "Pull");
+		
+		t_push.start();
+		t_update.start();
+		t_pull.start();
+		
+		while (t_push.isAlive() | t_update.isAlive() | t_pull.isAlive()) {
+			Thread.onSpinWait();
+		}
+		
 	}
 	
 }

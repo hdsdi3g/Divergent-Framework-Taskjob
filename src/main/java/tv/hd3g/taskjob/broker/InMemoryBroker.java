@@ -31,16 +31,18 @@ import com.google.gson.JsonObject;
 public class InMemoryBroker implements Broker {
 	private static Logger log = Logger.getLogger(InMemoryBroker.class);
 	
-	int max_job_count;
-	long abandoned_jobs_retention_time;
-	long done_jobs_retention_time;
-	long error_jobs_retention_time;
+	private int max_job_count;
+	private long abandoned_jobs_retention_time;
+	private long done_jobs_retention_time;
+	private long error_jobs_retention_time;
+	private final JobStore store;
 	
 	public InMemoryBroker(int max_job_count, long abandoned_jobs_retention_time, long done_jobs_retention_time, long error_jobs_retention_time, TimeUnit unit) {
 		this.max_job_count = max_job_count;
 		this.abandoned_jobs_retention_time = unit.toMillis(abandoned_jobs_retention_time);
 		this.done_jobs_retention_time = unit.toMillis(done_jobs_retention_time);
 		this.error_jobs_retention_time = unit.toMillis(error_jobs_retention_time);
+		store = new JobStore();
 	}
 	
 	/**
