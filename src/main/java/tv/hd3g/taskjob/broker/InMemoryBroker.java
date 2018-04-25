@@ -256,6 +256,8 @@ public class InMemoryBroker implements Broker {
 				}
 				
 				return linked_job.getStatus() == TaskStatus.DONE;
+			}).sorted((l, r) -> {
+				return Long.compare(l.getCreateDate(), r.getCreateDate());
 			});
 		}, job -> {
 			job.switchStatus(TaskStatus.PREPARING);

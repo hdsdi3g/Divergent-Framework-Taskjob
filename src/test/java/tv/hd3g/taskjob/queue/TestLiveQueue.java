@@ -134,7 +134,7 @@ public class TestLiveQueue extends TestCase {
 			return (referer, bkr, shouldStopProcessing) -> {
 				JobUtilityTest.addPropertyInContext(referer, "done", "context1");
 				assertEquals("context1", referer.getContextContent().get("expected").getAsString());
-				Thread.sleep(1);
+				Thread.sleep(5);
 			};
 		});
 		
@@ -142,7 +142,7 @@ public class TestLiveQueue extends TestCase {
 			return (referer, bkr, shouldStopProcessing) -> {
 				JobUtilityTest.addPropertyInContext(referer, "done", "context2");
 				assertEquals("context2", referer.getContextContent().get("expected").getAsString());
-				Thread.sleep(1);
+				Thread.sleep(5);
 			};
 		});
 		

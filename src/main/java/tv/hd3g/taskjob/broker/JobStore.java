@@ -41,7 +41,6 @@ class JobStore {
 	
 	private final HashMap<UUID, Job> jobs_by_uuid;
 	private final HashSet<UUID> waiting_jobs;
-	private final HashSet<UUID> done_jobs;
 	private final HashSet<UUID> others_jobs;
 	
 	JobStore() {
@@ -50,7 +49,6 @@ class JobStore {
 		
 		jobs_by_uuid = new HashMap<>();
 		waiting_jobs = new HashSet<>();
-		done_jobs = new HashSet<>();
 		others_jobs = new HashSet<>();
 	}
 	
@@ -71,9 +69,7 @@ class JobStore {
 	}
 	
 	private HashSet<UUID> getListByTaskStatus(TaskStatus status) {
-		if (TaskStatus.DONE.equals(status)) {
-			return done_jobs;
-		} else if (TaskStatus.WAITING.equals(status)) {
+		if (TaskStatus.WAITING.equals(status)) {
 			return waiting_jobs;
 		} else {
 			return others_jobs;
@@ -127,9 +123,6 @@ class JobStore {
 		HashSet<UUID> planned_list = getListByTaskStatus(job.getStatus());
 		
 		if (planned_list.contains(uuid) == false) {
-			if (planned_list.equals(done_jobs) == false) {
-				done_jobs.remove(job.getKey());
-			}
 			if (planned_list.equals(waiting_jobs) == false) {
 				waiting_jobs.remove(job.getKey());
 			}
@@ -205,8 +198,8 @@ class JobStore {
 	}
 	
 	void checkConsistency() {
-		if (jobs_by_uuid.size() != waiting_jobs.size() + done_jobs.size() + others_jobs.size()) {
-			throw new RuntimeException("Invalid lists sizes, jobs_by_uuid: " + jobs_by_uuid.size() + ", waiting_jobs: " + waiting_jobs.size() + ", done_jobs: " + done_jobs.size() + ", others_jobs: " + others_jobs.size());
+		if (jobs_by_uuid.size() != waiting_jobs.size() + others_jobs.size()) {
+			throw new RuntimeException("Invalid lists sizes, jobs_by_uuid: " + jobs_by_uuid.size() + ", waiting_jobs: " + waiting_jobs.size() + ", others_jobs: " + others_jobs.size());
 		}
 		
 		waiting_jobs.forEach(uuid -> {
@@ -214,14 +207,6 @@ class JobStore {
 				throw new NullPointerException("Missing " + uuid + " from waiting_jobs in jobs_by_uuid");
 			} else if (jobs_by_uuid.get(uuid).getStatus() != TaskStatus.WAITING) {
 				throw new RuntimeException("Invalid job list position, " + jobs_by_uuid.get(uuid) + " can't be in WAITING list because it's in " + jobs_by_uuid.get(uuid).getStatus() + " state");
-			}
-		});
-		
-		done_jobs.forEach(uuid -> {
-			if (jobs_by_uuid.containsKey(uuid) == false) {
-				throw new NullPointerException("Missing " + uuid + " from done_jobs in jobs_by_uuid");
-			} else if (jobs_by_uuid.get(uuid).getStatus() != TaskStatus.DONE) {
-				throw new RuntimeException("Invalid job list position, " + jobs_by_uuid.get(uuid) + " can't be in DONE list because it's in " + jobs_by_uuid.get(uuid).getStatus() + " state");
 			}
 		});
 		
@@ -283,24 +268,31 @@ class JobStore {
 		return syncWrite(() -> {
 			HashSet<UUID> task_list = getListByTaskStatus(status);
 			
-			List<Job> selected_jobs = stream_processor.apply(task_list.stream().map(uuid -> {
+			/**
+			 * Search jobs
+			 */
+			List<Job> sub_list = stream_processor.apply(task_list.stream().map(uuid -> {
 				return jobs_by_uuid.get(uuid);
 			}), uuid -> {
 				return jobs_by_uuid.get(uuid);
 			}).collect(Collectors.toList());
 			
-			boolean update_is_ok = selected_jobs.stream().peek(toUpdate).allMatch(job -> {
+			// ConcurrentModificationException if stream.toList is plugged
+			
+			/**
+			 * Update and save jobs
+			 */
+			sub_list.stream().peek(toUpdate).forEach(job -> {
 				if (log.isTraceEnabled()) {
 					log.trace("Update job " + job);
 				}
-				return update(job.getKey());
+				
+				if (update(job.getKey()) == false) {
+					throw new RuntimeException("Can't update job " + job);
+				}
 			});
 			
-			if (update_is_ok == false) {
-				throw new RuntimeException("Can't update jobs " + selected_jobs);
-			}
-			
-			return selected_jobs;
+			return sub_list;
 		});
 	}
 	
