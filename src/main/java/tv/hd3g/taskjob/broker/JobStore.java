@@ -275,20 +275,32 @@ class JobStore {
 		});
 	}
 	
-	void computeAndUpdate(TaskStatus status, Function<Stream<Job>, Stream<Job>> stream_processor, Consumer<Job> toUpdate) {
-		syncWrite(() -> {
+	/**
+	 * @param stream_processor (status' filtered job_list_stream_to_filter, job_by_uuid_resolver) -> filtered stream to update
+	 * @return selected jobs
+	 */
+	List<Job> computeAndUpdate(TaskStatus status, BiFunction<Stream<Job>, Function<UUID, Job>, Stream<Job>> stream_processor, Consumer<Job> toUpdate) {
+		return syncWrite(() -> {
 			HashSet<UUID> task_list = getListByTaskStatus(status);
 			
-			stream_processor.apply(task_list.stream().map(uuid -> {
+			List<Job> selected_jobs = stream_processor.apply(task_list.stream().map(uuid -> {
 				return jobs_by_uuid.get(uuid);
-			})).collect(Collectors.toList()).stream().peek(toUpdate).allMatch(job -> {
+			}), uuid -> {
+				return jobs_by_uuid.get(uuid);
+			}).collect(Collectors.toList());
+			
+			boolean update_is_ok = selected_jobs.stream().peek(toUpdate).allMatch(job -> {
 				if (log.isTraceEnabled()) {
 					log.trace("Update job " + job);
 				}
 				return update(job.getKey());
 			});
 			
-			return null;
+			if (update_is_ok == false) {
+				throw new RuntimeException("Can't update jobs " + selected_jobs);
+			}
+			
+			return selected_jobs;
 		});
 	}
 	

@@ -50,8 +50,54 @@ public final class Job {
 	private int actual_progression_value;
 	private int max_progression_value;
 	
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		
+		sb.append(context_type);
+		sb.append(":");
+		sb.append(status);
+		
+		if (external_reference != null) {
+			sb.append(":");
+			sb.append(external_reference);
+		}
+		sb.append(":");
+		sb.append(key);
+		sb.append("(");
+		sb.append(description.substring(0, Math.min(description.length(), 30)));
+		sb.append(")");
+		
+		if (last_error_message != null) {
+			sb.append("\"");
+			sb.append(last_error_message);
+			sb.append("\"");
+		} else if (max_progression_value > 0) {
+			sb.append(actual_progression_value);
+			sb.append("/");
+			sb.append(max_progression_value);
+			sb.append(",");
+		}
+		
+		if (linked_job != null) {
+			sb.append("L_");
+			sb.append(linked_job.toString().substring(8));
+		}
+		if (relatives_sub_jobs != null) {
+			if (relatives_sub_jobs.isEmpty() == false) {
+				sb.append("R");
+				sb.append(relatives_sub_jobs.size());
+			}
+		}
+		
+		return sb.toString();
+	}
+	
 	UUID init(String description, String context_type, JsonObject context_content, ArrayList<String> context_requirement_tags) {
-		this.description = description;
+		if (description == null) {
+			this.description = "";
+		} else {
+			this.description = description;
+		}
 		
 		key = UUID.randomUUID();
 		
@@ -115,6 +161,9 @@ public final class Job {
 		return this;
 	}
 	
+	/**
+	 * @return never null
+	 */
 	public List<Job> getRelativesJobs(Broker broker) {
 		if (relatives_sub_jobs == null) {
 			return Collections.emptyList();
@@ -122,6 +171,9 @@ public final class Job {
 		return broker.getJobsByUUID(relatives_sub_jobs);
 	}
 	
+	/**
+	 * @return never null
+	 */
 	ImmutableList<UUID> getRelativesJobsUUID() {
 		if (relatives_sub_jobs == null) {
 			return ImmutableList.of();
@@ -192,6 +244,13 @@ public final class Job {
 		return this;
 	}
 	
+	boolean hasContextRequirementTags() {
+		if (context_requirement_tags == null) {
+			return false;
+		}
+		return context_requirement_tags.isEmpty() == false;
+	}
+	
 	/**
 	 * @return never null
 	 */
@@ -220,5 +279,37 @@ public final class Job {
 		} else {
 			return create_date + max_age_msec < System.currentTimeMillis();
 		}
+	}
+	
+	public long getStartDate() {
+		return start_date;
+	}
+	
+	public long getEndDate() {
+		return end_date;
+	}
+	
+	public String getLastErrorMessage() {
+		return last_error_message;
+	}
+	
+	public String getExternalReference() {
+		return external_reference;
+	}
+	
+	public int getActualProgressionValue() {
+		return actual_progression_value;
+	}
+	
+	public int getMaxProgressionValue() {
+		return max_progression_value;
+	}
+	
+	public long getCreateDate() {
+		return create_date;
+	}
+	
+	public String getDescription() {
+		return description;
 	}
 }

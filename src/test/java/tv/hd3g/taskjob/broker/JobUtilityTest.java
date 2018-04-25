@@ -125,11 +125,11 @@ public class JobUtilityTest {
 			JobUtilityTest.switchStatus(job, new_status);
 		}
 		
-		public void onNewLocalJobsActivity(Runnable callback) {
+		public void registerCallbackOnNewLocalJobsActivity(Runnable callback) {
 			throw new RuntimeException("Not implemented");
 		}
 		
-		public void getNextActions(List<String> list_to_context_types, IntSupplier queue_capacity, BiPredicate<String, List<String>> filterByContextTypeAndTags, Predicate<Job> onFoundActionReadyToStart) {
+		public void getNextJobs(List<String> list_to_context_types, IntSupplier queue_capacity, BiPredicate<String, List<String>> filterByContextTypeAndTags, Predicate<Job> onFoundActionReadyToStart) {
 			throw new RuntimeException("Not implemented");
 		}
 		
@@ -141,11 +141,11 @@ public class JobUtilityTest {
 			throw new RuntimeException("Not implemented");
 		}
 		
-		public Job createJob(String description, String external_reference, JsonObject context, ArrayList<String> context_requirement_tags) {
+		public Job createJob(String description, String external_reference, String context_type, JsonObject context_content, ArrayList<String> context_requirement_tags) {
 			throw new RuntimeException("Not implemented");
 		}
 		
-		public Job addSubJob(Job reference, String description, JsonObject context, ArrayList<String> context_requirement_tags) {
+		public Job addSubJob(Job reference, String description, String external_reference, String context_type, JsonObject context_content, ArrayList<String> context_requirement_tags) {
 			throw new RuntimeException("Not implemented");
 		}
 		

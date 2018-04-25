@@ -18,7 +18,6 @@ package tv.hd3g.taskjob.broker;
 
 public enum TaskStatus {
 	
-	// XXX broker set
 	CANCELED {
 		public boolean canSwitchTo(TaskStatus new_status) {
 			switch (new_status) {
@@ -49,7 +48,6 @@ public enum TaskStatus {
 			return false;
 		}
 	},
-	// XXX broker set
 	POSTPONED {
 		public boolean canSwitchTo(TaskStatus new_status) {
 			switch (new_status) {
@@ -170,16 +168,15 @@ public enum TaskStatus {
 			return true;
 		}
 	},
-	// XXX broker set
 	PREPARING {
 		public boolean canSwitchTo(TaskStatus new_status) {
 			switch (new_status) {
 			case PROCESSING:
 			case ERROR:
+			case WAITING:
 				return true;
 			case POSTPONED:
 			case CANCELED:
-			case WAITING:
 			case DONE:
 			case STOPPING:
 			case STOPPED:

@@ -116,7 +116,7 @@ public class TestJobStore extends TestCase {
 		/**
 		 * Test bulk update
 		 */
-		store.computeAndUpdate(TaskStatus.POSTPONED, stream -> {
+		store.computeAndUpdate(TaskStatus.POSTPONED, (stream, uuid_resolver) -> {
 			return stream.limit(10);
 		}, job -> {
 			job.switchStatus(TaskStatus.WAITING);

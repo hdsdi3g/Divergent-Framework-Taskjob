@@ -25,13 +25,13 @@ import java.util.function.Predicate;
 
 import com.google.gson.JsonObject;
 
-public interface Broker {// TODO implements broker
+public interface Broker {
 	
 	List<Job> getJobsByUUID(List<UUID> keys);
 	
-	public Job createJob(String description, String external_reference, JsonObject context, ArrayList<String> context_requirement_tags);
+	public Job createJob(String description, String external_reference, String context_type, JsonObject context_content, ArrayList<String> context_requirement_tags);
 	
-	public Job addSubJob(Job reference, String description, JsonObject context, ArrayList<String> context_requirement_tags);
+	public Job addSubJob(Job reference, String description, String external_reference, String context_type, JsonObject context_content, ArrayList<String> context_requirement_tags);
 	
 	public List<Job> getAllJobs();
 	
@@ -49,11 +49,11 @@ public interface Broker {// TODO implements broker
 	 * @param filterByContextTypeAndTags if can select context_type -> context requirements tags
 	 * @param onFoundActionReadyToStart selected and locked actions are presented to queue, and return true if action is really started.
 	 */
-	public void getNextActions(List<String> list_to_context_types, IntSupplier queue_capacity, BiPredicate<String, List<String>> filterByContextTypeAndTags, Predicate<Job> onFoundActionReadyToStart);
+	public void getNextJobs(List<String> list_to_context_types, IntSupplier queue_capacity, BiPredicate<String, List<String>> filterByContextTypeAndTags, Predicate<Job> onFoundJobReadyToStart);
 	
 	/**
 	 * @param callback generaly linked by a queue
 	 */
-	public void onNewLocalJobsActivity(Runnable callback);
+	public void registerCallbackOnNewLocalJobsActivity(Runnable callback);
 	
 }

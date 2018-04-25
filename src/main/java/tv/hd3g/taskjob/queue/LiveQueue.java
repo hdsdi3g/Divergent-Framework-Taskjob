@@ -60,7 +60,7 @@ public class LiveQueue implements Queue {
 		engines = new ArrayList<>();
 		pending_stop = false;
 		
-		broker.onNewLocalJobsActivity(() -> {
+		broker.registerCallbackOnNewLocalJobsActivity(() -> {
 			if (isPendingStop()) {
 				return;
 			}
@@ -157,7 +157,7 @@ public class LiveQueue implements Queue {
 			});
 		};
 		
-		broker.getNextActions(getActualEnginesContextTypes(true), () -> {
+		broker.getNextJobs(getActualEnginesContextTypes(true), () -> {
 			return engines.stream().mapToInt(engine -> {
 				return engine.actualFreeWorkers();
 			}).sum();
