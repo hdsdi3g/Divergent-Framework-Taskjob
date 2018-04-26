@@ -21,13 +21,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-import org.apache.log4j.Logger;
-
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonObject;
 
 public final class Job {
-	private static Logger log = Logger.getLogger(Job.class);
+	// private static Logger log = Logger.getLogger(Job.class);
 	
 	private long create_date;
 	private String description;
@@ -62,7 +60,7 @@ public final class Job {
 			sb.append(external_reference);
 		}
 		sb.append(":");
-		sb.append(key);
+		sb.append(key.toString().substring(0, 8));
 		sb.append("(");
 		sb.append(description.substring(0, Math.min(description.length(), 30)));
 		sb.append(")");
@@ -80,7 +78,7 @@ public final class Job {
 		
 		if (linked_job != null) {
 			sb.append("L_");
-			sb.append(linked_job.toString().substring(8));
+			sb.append(linked_job.toString().substring(0, 8));
 		}
 		if (relatives_sub_jobs != null) {
 			if (relatives_sub_jobs.isEmpty() == false) {
@@ -311,5 +309,33 @@ public final class Job {
 	
 	public String getDescription() {
 		return description;
+	}
+	
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + (key == null ? 0 : key.hashCode());
+		return result;
+	}
+	
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null) {
+			return false;
+		}
+		if (!(obj instanceof Job)) {
+			return false;
+		}
+		Job other = (Job) obj;
+		if (key == null) {
+			if (other.key != null) {
+				return false;
+			}
+		} else if (!key.equals(other.key)) {
+			return false;
+		}
+		return true;
 	}
 }
