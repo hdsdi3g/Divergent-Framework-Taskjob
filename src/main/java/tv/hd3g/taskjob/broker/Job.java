@@ -26,6 +26,7 @@ import com.google.gson.JsonObject;
 
 public final class Job {
 	// private static Logger log = Logger.getLogger(Job.class);
+	public static final String JAVA_CLASS_PREFIX_CONTEXT_TYPE = "java:class:";
 	
 	private long create_date;
 	private String description;

@@ -70,6 +70,12 @@ public class LiveQueue implements Queue {
 		});
 	}
 	
+	public List<Engine> getEnginesByContextType(String context_name) {
+		return engines.stream().filter(engine -> {
+			return engine.getAllHandledContextTypes().contains(context_name);
+		}).collect(Collectors.toList());
+	}
+	
 	/**
 	 * Engines can set anytime the same context_type.
 	 */

@@ -17,6 +17,7 @@
 package tv.hd3g.taskjob.broker;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 
 import org.apache.log4j.Logger;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 public class InMemoryBroker implements Broker {
@@ -165,12 +167,21 @@ public class InMemoryBroker implements Broker {
 		}
 	}
 	
-	public Job createJob(String description, String external_reference, String context_type, JsonObject context_content, ArrayList<String> context_requirement_tags) {
-		if (store.size() > max_job_count) {
-			throw new RuntimeException("Too many created jobs in store");
+	public <T> Job createGenericJob(String description, String external_reference, T context, Collection<String> context_requirement_tags, Gson gson) {
+		return createJob(description, external_reference, Job.JAVA_CLASS_PREFIX_CONTEXT_TYPE + context.getClass().getName(), gson.toJsonTree(context).getAsJsonObject(), context_requirement_tags);
+	}
+	
+	public Job createJob(String description, String external_reference, String context_type, JsonObject context_content, Collection<String> context_requirement_tags) {
+		if (store.size() >= max_job_count) {
+			throw new FullJobStoreException();
 		}
 		Job job = new Job();
-		job.init(description, context_type, context_content, context_requirement_tags);
+		
+		ArrayList<String> l_context_requirement_tags = null;
+		if (context_requirement_tags != null) {
+			l_context_requirement_tags = new ArrayList<>(context_requirement_tags);
+		}
+		job.init(description, context_type, context_content, l_context_requirement_tags);
 		job.setExternalReference(external_reference);
 		
 		if (store.put(job) == false) {
@@ -186,12 +197,21 @@ public class InMemoryBroker implements Broker {
 		return job;
 	}
 	
-	public Job addSubJob(Job reference, String description, String external_reference, String context_type, JsonObject context_content, ArrayList<String> context_requirement_tags) {
-		if (store.size() > max_job_count) {
-			throw new RuntimeException("Too many created jobs in store");
+	public <T> Job createGenericSubJob(Job reference, String description, String external_reference, T context, Collection<String> context_requirement_tags, Gson gson) {
+		return addSubJob(reference, description, external_reference, Job.JAVA_CLASS_PREFIX_CONTEXT_TYPE + context.getClass().getName(), gson.toJsonTree(context).getAsJsonObject(), context_requirement_tags);
+	}
+	
+	public Job addSubJob(Job reference, String description, String external_reference, String context_type, JsonObject context_content, Collection<String> context_requirement_tags) {
+		if (store.size() >= max_job_count) {
+			throw new FullJobStoreException();
 		}
 		
-		Job sub_job = reference.addSubJob(description, context_type, context_content, context_requirement_tags).setExternalReference(external_reference);
+		ArrayList<String> l_context_requirement_tags = null;
+		if (context_requirement_tags != null) {
+			l_context_requirement_tags = new ArrayList<>(context_requirement_tags);
+		}
+		
+		Job sub_job = reference.addSubJob(description, context_type, context_content, l_context_requirement_tags).setExternalReference(external_reference);
 		
 		if (store.put(sub_job) == false) {
 			throw new RuntimeException("Can't put sub_job in internal store: " + sub_job);

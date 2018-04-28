@@ -70,6 +70,7 @@ public class TestWorkerThread extends TestCase {
 	
 	public void testExec() {
 		Job job = JobUtilityTest.createJob("test", "test", createContext(10), null);
+		JobUtilityTest.switchStatus(job, TaskStatus.PREPARING);
 		
 		TestWorker worker = new TestWorker();
 		WorkerThread w_t = new WorkerThread("Test", job, JobUtilityTest.broker, worker);
@@ -86,6 +87,7 @@ public class TestWorkerThread extends TestCase {
 	
 	public void testStopSimple() {
 		Job job = JobUtilityTest.createJob("test", "test", createContext(10), null);
+		JobUtilityTest.switchStatus(job, TaskStatus.PREPARING);
 		
 		TestWorker worker = new TestWorker();
 		WorkerThread w_t = new WorkerThread("Test", job, JobUtilityTest.broker, worker);
@@ -104,6 +106,7 @@ public class TestWorkerThread extends TestCase {
 	
 	public void testStopSync() throws InterruptedException, ExecutionException {
 		Job job = JobUtilityTest.createJob("test", "test", createContext(10), null);
+		JobUtilityTest.switchStatus(job, TaskStatus.PREPARING);
 		
 		TestWorker worker = new TestWorker();
 		WorkerThread w_t = new WorkerThread("Test", job, JobUtilityTest.broker, worker);
@@ -119,6 +122,7 @@ public class TestWorkerThread extends TestCase {
 	
 	public void testAfterProcess() {
 		Job job = JobUtilityTest.createJob("test", "test", createContext(10), null);
+		JobUtilityTest.switchStatus(job, TaskStatus.PREPARING);
 		
 		TestWorker worker = new TestWorker();
 		WorkerThread w_t = new WorkerThread("Test", job, JobUtilityTest.broker, worker);
@@ -145,6 +149,7 @@ public class TestWorkerThread extends TestCase {
 		jo_context.addProperty("error", 1);
 		
 		Job job = JobUtilityTest.createJob("test", "test", jo_context, null);
+		JobUtilityTest.switchStatus(job, TaskStatus.PREPARING);
 		
 		TestWorker worker = new TestWorker();
 		WorkerThread w_t = new WorkerThread("Test", job, JobUtilityTest.broker, worker);

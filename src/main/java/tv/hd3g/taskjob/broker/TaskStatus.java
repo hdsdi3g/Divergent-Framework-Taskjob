@@ -204,8 +204,8 @@ public enum TaskStatus {
 			case CANCELED:
 			case POSTPONED:
 			case PREPARING:
-			case PROCESSING:
 				return true;
+			case PROCESSING:
 			case STOPPING:
 			case STOPPED:
 			case ERROR:

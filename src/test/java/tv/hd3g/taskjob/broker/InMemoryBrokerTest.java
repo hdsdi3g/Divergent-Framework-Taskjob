@@ -16,16 +16,27 @@
 */
 package tv.hd3g.taskjob.broker;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
+
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 
 import com.google.gson.JsonObject;
 
 import junit.framework.TestCase;
 
 public class InMemoryBrokerTest extends TestCase {
+	
+	static {
+		Logger.getLogger(InMemoryBroker.class).setLevel(Level.WARN);
+	}
 	
 	public void testCreateGetDone() throws Exception {
 		long before_create = System.currentTimeMillis();
@@ -264,18 +275,256 @@ public class InMemoryBrokerTest extends TestCase {
 		assertNotNull(search);
 		assertEquals(1, search.size());
 		assertEquals(job, search.get(0));
-		// XXX to be continued...
+		
+		broker.getNextJobs(Arrays.asList("context1"), () -> {
+			return 10;
+		}, (c_type, c_tags) -> {
+			throw new RuntimeException("This should not be triggered");
+		}, selected_job -> {
+			assertEquals(job, selected_job);
+			return true;
+		});
+		
+		job.switchStatus(TaskStatus.PROCESSING);
+		
+		Thread.sleep(wait_duration + 10);
+		broker.flush();
+		
+		search = broker.getAllJobs();
+		assertNotNull(search);
+		assertEquals(1, search.size());
+		assertEquals(job, search.get(0));
+		
+		job.switchStatus(TaskStatus.DONE);
+		
+		broker.flush();
+		
+		search = broker.getAllJobs();
+		assertNotNull(search);
+		assertEquals(1, search.size());
+		assertEquals(job, search.get(0));
+		
+		Thread.sleep(wait_duration + 10);
+		broker.flush();
+		
+		search = broker.getAllJobs();
+		assertNotNull(search);
+		assertTrue(search.isEmpty());
 	}
 	
-	/*
-	broker.flush(); abandoned_jobs_retention_time,  done_jobs_retention_time,  error_jobs_retention_time
+	public void testFlushErrorJobs() throws Exception {
+		long wait_duration = 100;
+		
+		InMemoryBroker broker = new InMemoryBroker(10, 100_000 * wait_duration, 100_000 * wait_duration, wait_duration, TimeUnit.MILLISECONDS);
+		Job job = broker.createJob("D1", "ER1", "context1", new JsonObject(), null);
+		
+		Thread.sleep(wait_duration + 10);
+		broker.flush();
+		
+		List<Job> search = broker.getJobsByUUID(Arrays.asList(job.getKey()));
+		assertNotNull(search);
+		assertEquals(1, search.size());
+		assertEquals(job, search.get(0));
+		
+		search = broker.getAllJobs();
+		assertNotNull(search);
+		assertEquals(1, search.size());
+		assertEquals(job, search.get(0));
+		
+		broker.getNextJobs(Arrays.asList("context1"), () -> {
+			return 10;
+		}, (c_type, c_tags) -> {
+			throw new RuntimeException("This should not be triggered");
+		}, selected_job -> {
+			assertEquals(job, selected_job);
+			return true;
+		});
+		
+		job.switchStatus(TaskStatus.PROCESSING);
+		job.switchStatus(TaskStatus.ERROR);
+		
+		broker.flush();
+		
+		search = broker.getAllJobs();
+		assertNotNull(search);
+		assertEquals(1, search.size());
+		assertEquals(job, search.get(0));
+		
+		Thread.sleep(wait_duration + 10);
+		broker.flush();
+		
+		search = broker.getAllJobs();
+		assertNotNull(search);
+		assertTrue(search.isEmpty());
+	}
 	
-	Test getNextJobs check queue capacity
-	Test getNextJobs specific tags
-	Test getNextJobs ignore other contexts
+	public void testCapacity() throws Exception {
+		InMemoryBroker broker = new InMemoryBroker(10, 1, 1, 1, TimeUnit.SECONDS);
+		
+		IntStream.range(0, 10).forEach(i -> {
+			assertNotNull(broker.createJob("D", "ER", "context", new JsonObject(), null));
+		});
+		
+		FullJobStoreException fjse = null;
+		try {
+			broker.createJob("D", "ER", "context", new JsonObject(), null);
+		} catch (FullJobStoreException e) {
+			fjse = e;
+		}
+		assertNotNull(fjse);
+	}
 	
-	Test push multiple jobs, with multiple registerCallbackOnNewLocalJobsActivity, with multiple parallel getNextJobs
-	Test perfs big push and big flush
-	*/
+	public void testSpecificTagsAndContext() throws Exception {
+		InMemoryBroker broker = new InMemoryBroker(10, 1, 1, 1, TimeUnit.SECONDS);
+		
+		/*Job job_bad_context =*/ broker.createJob("D", "ER", "contextNOPE", new JsonObject(), null);
+		Job job_wo_tag = broker.createJob("D", "ER", "context", new JsonObject(), null);
+		Job job_w_tag = broker.createJob("D", "ER", "context", new JsonObject(), Arrays.asList("tag"));
+		/*Job job_bad_tag =*/ broker.createJob("D", "ER", "context", new JsonObject(), Arrays.asList("tNOPE"));
+		Job job_w_2tags = broker.createJob("D", "ER", "context", new JsonObject(), Arrays.asList("tag1", "tag2"));
+		/*Job job_bad_1tag =*/ broker.createJob("D", "ER", "context", new JsonObject(), Arrays.asList("tag", "tNOPE"));
+		
+		List<String> ok_list = Arrays.asList("tag", "tag1", "tag2");
+		
+		final ArrayList<Job> validated = new ArrayList<>();
+		
+		broker.getNextJobs(Arrays.asList("context"), () -> {
+			return 10;
+		}, (c_type, c_tags) -> {
+			assertEquals(c_type, "context");
+			return ok_list.containsAll(c_tags);
+		}, selected_job -> {
+			validated.add(selected_job);
+			return true;
+		});
+		
+		assertEquals(3, validated.size());
+		assertTrue(validated.contains(job_wo_tag));
+		assertTrue(validated.contains(job_w_tag));
+		assertTrue(validated.contains(job_w_2tags));
+	}
+	
+	public void testParallel() throws Exception {
+		
+		InMemoryBroker broker = new InMemoryBroker(100_000, 1, 1, 1, TimeUnit.SECONDS);
+		
+		final int CPU_COUNT = Math.max(Runtime.getRuntime().availableProcessors(), 2);
+		
+		ThreadPoolExecutor executor = new ThreadPoolExecutor(CPU_COUNT, CPU_COUNT, 1, TimeUnit.SECONDS, new LinkedBlockingQueue<>());
+		
+		Runnable onNewJobQueue1 = () -> {
+			broker.getNextJobs(Arrays.asList("context0"), () -> {
+				return 1;
+			}, (c_type, c_tags) -> {
+				throw new RuntimeException("This should not be triggered");
+			}, selected_job -> {
+				executor.execute(() -> {
+					if (selected_job.getContextType().equals("context0") == false) {
+						throw new RuntimeException("Invalid context: " + selected_job.getContextType() + " for " + selected_job.getDescription());
+					}
+					broker.switchStatus(selected_job, TaskStatus.PROCESSING);
+					broker.updateProgression(selected_job, 5, 10);
+					try {
+						Thread.sleep(1);
+					} catch (InterruptedException e) {
+					}
+					broker.switchStatus(selected_job, TaskStatus.DONE);
+				});
+				return true;
+			});
+		};
+		
+		Runnable onNewJobQueue2 = () -> {
+			broker.getNextJobs(Arrays.asList("context1"), () -> {
+				return 1;
+			}, (c_type, c_tags) -> {
+				throw new RuntimeException("This should not be triggered");
+			}, selected_job -> {
+				executor.execute(() -> {
+					if (selected_job.getContextType().equals("context1") == false) {
+						throw new RuntimeException("Invalid context: " + selected_job.getContextType() + " for " + selected_job.getDescription());
+					}
+					broker.switchStatus(selected_job, TaskStatus.PROCESSING);
+					broker.updateProgression(selected_job, 5, 10);
+					try {
+						Thread.sleep(1);
+					} catch (InterruptedException e) {
+					}
+					broker.switchStatus(selected_job, TaskStatus.DONE);
+				});
+				return true;
+			});
+		};
+		
+		broker.registerCallbackOnNewLocalJobsActivity(() -> executor.execute(onNewJobQueue1));
+		broker.registerCallbackOnNewLocalJobsActivity(() -> executor.execute(onNewJobQueue2));
+		
+		IntStream.range(0, 600).parallel().forEach(i -> {
+			assertNotNull(broker.createJob("D-" + i, "#" + i, "context" + (i % 2), new JsonObject(), null));
+		});
+		
+		assertEquals(600, broker.getAllJobs().size());
+		
+		while (broker.getAllJobs().stream().allMatch(job -> {
+			return job.getStatus().equals(TaskStatus.DONE);
+		}) == false) {
+			Thread.onSpinWait();
+		}
+		
+		broker.getAllJobs().parallelStream().forEach(job -> {
+			if (job.getStatus().equals(TaskStatus.DONE) == false) {
+				throw new RuntimeException("Invalid job status: " + job.getDescription() + "/" + job.getContextType() + "/" + job.getStatus());
+			} else if (job.getActualProgressionValue() != 5) {
+				throw new RuntimeException("Invalid job ProgressionValue: " + job.getDescription() + "/" + job.getContextType() + "/" + job.getActualProgressionValue());
+			}
+		});
+		
+	}
+	
+	/**
+	 * 100k in 1,4 sec on a i7/2013
+	 */
+	public void testBigPushAndFlush() throws Exception {
+		int count = 100_000;
+		int slices = count / 10;
+		
+		InMemoryBroker broker = new InMemoryBroker(count * 2, 60_000, 1, 1, TimeUnit.MILLISECONDS);
+		
+		IntStream.range(0, count).parallel().forEach(i -> {
+			assertNotNull(broker.createJob("D-" + i, "#" + i, "context" + (i % 2), new JsonObject(), null));
+		});
+		
+		IntStream.range(0, (count / slices) + 1).parallel().forEach(i -> {
+			ArrayList<Job> jobs = new ArrayList<>(slices);
+			
+			broker.getNextJobs(Arrays.asList("context0"), () -> {
+				return slices - jobs.size();
+			}, (c_type, c_tags) -> {
+				throw new RuntimeException("This should not be triggered");
+			}, selected_job -> {
+				return jobs.add(selected_job);
+			});
+			
+			jobs.stream().parallel().forEach(selected_job -> {
+				if (selected_job.getContextType().equals("context0") == false) {
+					throw new RuntimeException("Invalid context: " + selected_job.getContextType() + " for " + selected_job.getDescription());
+				}
+				broker.switchStatus(selected_job, TaskStatus.PROCESSING);
+				broker.switchStatus(selected_job, TaskStatus.DONE);
+			});
+			
+			broker.flush();
+		});
+		
+		Thread.sleep(2);
+		broker.flush();
+		assertEquals(count / 2, broker.getAllJobs().size());
+		
+		broker.getAllJobs().parallelStream().forEach(job -> {
+			if (job.getContextType().equals("context0")) {
+				throw new RuntimeException("Invalid job context0: " + job);
+			}
+		});
+	}
 	
 }

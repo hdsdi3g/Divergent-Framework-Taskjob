@@ -68,7 +68,7 @@ class WorkerThread extends Thread {
 	}
 	
 	public void run() {
-		log.info("Start worker process, \"" + job.getContextType() + "\" by " + worker + " for " + job.getKey());
+		log.info("Start worker process, \"" + job.getContextType() + "\" by " + worker + " for " + job.getKey().toString().substring(0, 8));
 		
 		Runnable onStopProcessing = worker.onStopProcessing();
 		

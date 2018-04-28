@@ -17,6 +17,7 @@
 package tv.hd3g.taskjob.broker;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.BiPredicate;
@@ -141,11 +142,11 @@ public class JobUtilityTest {
 			throw new RuntimeException("Not implemented");
 		}
 		
-		public Job createJob(String description, String external_reference, String context_type, JsonObject context_content, ArrayList<String> context_requirement_tags) {
+		public Job createJob(String description, String external_reference, String context_type, JsonObject context_content, Collection<String> context_requirement_tags) {
 			throw new RuntimeException("Not implemented");
 		}
 		
-		public Job addSubJob(Job reference, String description, String external_reference, String context_type, JsonObject context_content, ArrayList<String> context_requirement_tags) {
+		public Job addSubJob(Job reference, String description, String external_reference, String context_type, JsonObject context_content, Collection<String> context_requirement_tags) {
 			throw new RuntimeException("Not implemented");
 		}
 		
