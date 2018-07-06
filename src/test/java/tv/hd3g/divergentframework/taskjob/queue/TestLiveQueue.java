@@ -14,7 +14,7 @@
  * Copyright (C) hdsdi3g for hd3g.tv 2018
  * 
 */
-package tv.hd3g.taskjob.queue;
+package tv.hd3g.divergentframework.taskjob.queue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,11 +35,12 @@ import org.apache.log4j.Logger;
 import com.google.gson.JsonObject;
 
 import junit.framework.TestCase;
-import tv.hd3g.taskjob.broker.Broker;
-import tv.hd3g.taskjob.broker.Job;
-import tv.hd3g.taskjob.broker.JobUtilityTest;
-import tv.hd3g.taskjob.broker.TaskStatus;
-import tv.hd3g.taskjob.worker.Engine;
+import tv.hd3g.divergentframework.taskjob.broker.Broker;
+import tv.hd3g.divergentframework.taskjob.broker.Job;
+import tv.hd3g.divergentframework.taskjob.broker.JobUtilityTest;
+import tv.hd3g.divergentframework.taskjob.broker.TaskStatus;
+import tv.hd3g.divergentframework.taskjob.queue.LiveQueue;
+import tv.hd3g.divergentframework.taskjob.worker.Engine;
 
 public class TestLiveQueue extends TestCase {
 	

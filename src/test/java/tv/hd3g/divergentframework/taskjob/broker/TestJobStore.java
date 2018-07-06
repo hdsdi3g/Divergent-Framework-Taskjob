@@ -14,7 +14,7 @@
  * Copyright (C) hdsdi3g for hd3g.tv 2018
  * 
 */
-package tv.hd3g.taskjob.broker;
+package tv.hd3g.divergentframework.taskjob.broker;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,6 +28,9 @@ import java.util.stream.IntStream;
 import com.google.gson.JsonObject;
 
 import junit.framework.TestCase;
+import tv.hd3g.divergentframework.taskjob.broker.Job;
+import tv.hd3g.divergentframework.taskjob.broker.JobStore;
+import tv.hd3g.divergentframework.taskjob.broker.TaskStatus;
 
 public class TestJobStore extends TestCase {
 	

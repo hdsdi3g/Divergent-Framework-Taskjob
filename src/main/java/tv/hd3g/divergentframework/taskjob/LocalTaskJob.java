@@ -14,7 +14,7 @@
  * Copyright (C) hdsdi3g for hd3g.tv 2018
  * 
 */
-package tv.hd3g.taskjob;
+package tv.hd3g.divergentframework.taskjob;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -26,13 +26,13 @@ import org.apache.log4j.Logger;
 
 import com.google.gson.Gson;
 
-import tv.hd3g.taskjob.broker.InMemoryBroker;
-import tv.hd3g.taskjob.broker.Job;
-import tv.hd3g.taskjob.queue.LiveQueue;
-import tv.hd3g.taskjob.queue.Queue;
-import tv.hd3g.taskjob.worker.Engine;
-import tv.hd3g.taskjob.worker.GenericEngine;
-import tv.hd3g.taskjob.worker.GenericWorker;
+import tv.hd3g.divergentframework.taskjob.broker.InMemoryBroker;
+import tv.hd3g.divergentframework.taskjob.broker.Job;
+import tv.hd3g.divergentframework.taskjob.queue.LiveQueue;
+import tv.hd3g.divergentframework.taskjob.queue.Queue;
+import tv.hd3g.divergentframework.taskjob.worker.Engine;
+import tv.hd3g.divergentframework.taskjob.worker.GenericEngine;
+import tv.hd3g.divergentframework.taskjob.worker.GenericWorker;
 
 public class LocalTaskJob extends InMemoryBroker implements Queue {
 	private static Logger log = Logger.getLogger(LocalTaskJob.class);

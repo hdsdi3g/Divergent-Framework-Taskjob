@@ -14,7 +14,7 @@
  * Copyright (C) hdsdi3g for hd3g.tv 2018
  * 
 */
-package tv.hd3g.taskjob.queue;
+package tv.hd3g.divergentframework.taskjob.queue;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,8 +31,8 @@ import java.util.stream.Collectors;
 
 import org.apache.log4j.Logger;
 
-import tv.hd3g.taskjob.broker.Broker;
-import tv.hd3g.taskjob.worker.Engine;
+import tv.hd3g.divergentframework.taskjob.broker.Broker;
+import tv.hd3g.divergentframework.taskjob.worker.Engine;
 
 public class LiveQueue implements Queue {
 	private static Logger log = Logger.getLogger(LiveQueue.class);

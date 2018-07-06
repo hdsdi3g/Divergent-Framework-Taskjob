@@ -1,20 +1,23 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>tv.hd3g.divergentframework</groupId>
-	<artifactId>taskjob</artifactId>
+
+	<groupId>tv.hd3g</groupId>
+	<artifactId>divergentframework-taskjob</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+	<packaging>jar</packaging>
   
 	<name>Divergent Framework Taskjob</name>
+    <url>https://github.com/hdsdi3g/Divergent-Framework-Taskjob</url>
+
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.target>1.9</maven.compiler.target>
-		<maven.compiler.source>1.9</maven.compiler.source>
 	</properties>
 
   <dependencies>
     <dependency>
-		<groupId>tv.hd3g.divergentframework</groupId>
-		<artifactId>factory</artifactId>
+		<groupId>tv.hd3g</groupId>
+		<artifactId>divergentframework-factory</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
     </dependency>
     <dependency>
@@ -35,11 +38,19 @@
   	<url>https://hd3g.tv</url>
   </organization>
   <scm>
-  	<url>https://github.com/hdsdi3g/Divergent-Framework-Taskjob</url>
+  	<url>https://github.com/hdsdi3g/Divergent-Framework-Taskjob.git</url>
   	<developerConnection>hdsdi3g</developerConnection>
   </scm>
   <issueManagement>
   	<url>https://github.com/hdsdi3g/Divergent-Framework-Taskjob/issues</url>
   	<system>GitHub</system>
   </issueManagement>
+  
+	<licenses>
+	  <license>
+	    <name>GNU Lesser General Public License, Version 3</name>
+	    <url>https://www.gnu.org/licenses/lgpl.txt</url>
+	    <distribution>repo</distribution>
+	  </license>
+	</licenses>
 </project>

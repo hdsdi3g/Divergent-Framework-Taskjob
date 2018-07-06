@@ -14,12 +14,12 @@
  * Copyright (C) hdsdi3g for hd3g.tv 2018
  * 
 */
-package tv.hd3g.taskjob.worker;
+package tv.hd3g.divergentframework.taskjob.worker;
 
 import java.util.function.Supplier;
 
-import tv.hd3g.taskjob.broker.Broker;
-import tv.hd3g.taskjob.broker.Job;
+import tv.hd3g.divergentframework.taskjob.broker.Broker;
+import tv.hd3g.divergentframework.taskjob.broker.Job;
 
 /**
  * Execute Action, used only once.

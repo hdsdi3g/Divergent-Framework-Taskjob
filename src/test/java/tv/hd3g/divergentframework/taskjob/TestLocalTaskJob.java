@@ -14,7 +14,7 @@
  * Copyright (C) hdsdi3g for hd3g.tv 2018
  * 
 */
-package tv.hd3g.taskjob;
+package tv.hd3g.divergentframework.taskjob;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -24,7 +24,8 @@ import com.google.gson.Gson;
 
 import junit.framework.TestCase;
 import tv.hd3g.divergentframework.factory.Factory;
-import tv.hd3g.taskjob.broker.Job;
+import tv.hd3g.divergentframework.taskjob.LocalTaskJob;
+import tv.hd3g.divergentframework.taskjob.broker.Job;
 
 public class TestLocalTaskJob extends TestCase {
 	

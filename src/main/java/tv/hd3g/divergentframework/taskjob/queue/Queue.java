@@ -14,13 +14,13 @@
  * Copyright (C) hdsdi3g for hd3g.tv 2018
  * 
 */
-package tv.hd3g.taskjob.queue;
+package tv.hd3g.divergentframework.taskjob.queue;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
-import tv.hd3g.taskjob.worker.Engine;
+import tv.hd3g.divergentframework.taskjob.worker.Engine;
 
 public interface Queue {
 	
