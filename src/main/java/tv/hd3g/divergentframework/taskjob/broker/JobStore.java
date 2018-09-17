@@ -16,6 +16,7 @@
 */
 package tv.hd3g.divergentframework.taskjob.broker;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -266,7 +267,7 @@ class JobStore {
 	
 	/**
 	 * @param stream_processor (status' filtered job_list_stream_to_filter, job_by_uuid_resolver) -> filtered stream to update
-	 * @return selected jobs
+	 * @return selected jobs, sorted by creation date.
 	 */
 	List<Job> computeAndUpdate(TaskStatus status, BiFunction<Stream<Job>, Function<UUID, Job>, Stream<Job>> stream_processor, Consumer<Job> toUpdate) {
 		return syncWrite(() -> {
@@ -279,7 +280,7 @@ class JobStore {
 				return jobs_by_uuid.get(uuid);
 			}), uuid -> {
 				return jobs_by_uuid.get(uuid);
-			}).collect(Collectors.toList());
+			}).sorted(Comparator.comparing(Job::getCreateDate)).collect(Collectors.toList());
 			
 			// ConcurrentModificationException if stream.toList is plugged
 			
