@@ -19,7 +19,8 @@ package tv.hd3g.divergentframework.taskjob.worker;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import tv.hd3g.divergentframework.taskjob.broker.Broker;
 import tv.hd3g.divergentframework.taskjob.broker.Job;
@@ -29,7 +30,7 @@ import tv.hd3g.divergentframework.taskjob.broker.TaskStatus;
  * Execute a Worker in a Thread
  */
 class WorkerThread extends Thread {
-	private static Logger log = Logger.getLogger(WorkerThread.class);
+	private static final Logger log = LogManager.getLogger();
 	
 	private final Job job;
 	private final Broker broker;

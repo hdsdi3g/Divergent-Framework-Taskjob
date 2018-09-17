@@ -22,26 +22,30 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.google.gson.Gson;
 
 import tv.hd3g.divergentframework.taskjob.broker.InMemoryBroker;
 import tv.hd3g.divergentframework.taskjob.broker.Job;
-import tv.hd3g.divergentframework.taskjob.queue.LiveQueue;
+import tv.hd3g.divergentframework.taskjob.queue.LocalQueue;
 import tv.hd3g.divergentframework.taskjob.queue.Queue;
 import tv.hd3g.divergentframework.taskjob.worker.Engine;
 import tv.hd3g.divergentframework.taskjob.worker.GenericEngine;
 import tv.hd3g.divergentframework.taskjob.worker.GenericWorker;
 
-public class LocalTaskJob extends InMemoryBroker implements Queue {
-	private static Logger log = Logger.getLogger(LocalTaskJob.class);
+/**
+ * Connect LocalQueue and InMemoryBroker for a full Taskjob utility.
+ */
+public class InMemoryLocalTaskJob extends InMemoryBroker implements Queue {
+	private static final Logger log = LogManager.getLogger();
 	
-	private final LiveQueue queue;
+	private final LocalQueue queue;
 	
-	public LocalTaskJob(int max_job_count, long abandoned_jobs_retention_time, long done_jobs_retention_time, long error_jobs_retention_time, TimeUnit unit) {
+	public InMemoryLocalTaskJob(int max_job_count, long abandoned_jobs_retention_time, long done_jobs_retention_time, long error_jobs_retention_time, TimeUnit unit) {
 		super(max_job_count, abandoned_jobs_retention_time, done_jobs_retention_time, error_jobs_retention_time, unit);
-		queue = new LiveQueue(this);
+		queue = new LocalQueue(this);
 	}
 	
 	public void registerEngine(Engine engine) {

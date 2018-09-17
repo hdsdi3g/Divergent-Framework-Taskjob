@@ -30,13 +30,14 @@ import java.util.function.IntSupplier;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 public class InMemoryBroker implements Broker {
-	private static Logger log = Logger.getLogger(InMemoryBroker.class);
+	private static final Logger log = LogManager.getLogger();
 	
 	private int max_job_count;
 	private long abandoned_jobs_retention_time;

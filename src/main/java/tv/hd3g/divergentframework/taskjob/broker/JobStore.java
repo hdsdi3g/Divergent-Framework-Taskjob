@@ -30,10 +30,11 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 class JobStore {
-	private static Logger log = Logger.getLogger(JobStore.class);
+	private static final Logger log = LogManager.getLogger();
 	
 	private final ReentrantLock lock;
 	private final Condition lock_condition;

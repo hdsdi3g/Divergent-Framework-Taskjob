@@ -26,7 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import tv.hd3g.divergentframework.taskjob.broker.Broker;
 import tv.hd3g.divergentframework.taskjob.broker.Job;
@@ -36,7 +37,7 @@ import tv.hd3g.divergentframework.taskjob.broker.TaskStatus;
  * Factory for create specific workers on demand.
  */
 public final class Engine {
-	private static Logger log = Logger.getLogger(Engine.class);
+	private static final Logger log = LogManager.getLogger();
 	
 	private final LinkedBlockingQueue<WorkerThread> runnables;
 	private final String base_thread_name;

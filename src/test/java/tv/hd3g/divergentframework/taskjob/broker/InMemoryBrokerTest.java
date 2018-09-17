@@ -25,21 +25,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 
 import com.google.gson.JsonObject;
 
 import junit.framework.TestCase;
-import tv.hd3g.divergentframework.taskjob.broker.FullJobStoreException;
-import tv.hd3g.divergentframework.taskjob.broker.InMemoryBroker;
-import tv.hd3g.divergentframework.taskjob.broker.Job;
-import tv.hd3g.divergentframework.taskjob.broker.TaskStatus;
 
 public class InMemoryBrokerTest extends TestCase {
 	
 	static {
-		Logger.getLogger(InMemoryBroker.class).setLevel(Level.WARN);
+		Configurator.setLevel(InMemoryBroker.class.getName(), Level.WARN);
 	}
 	
 	public void testCreateGetDone() throws Exception {
@@ -464,7 +460,7 @@ public class InMemoryBrokerTest extends TestCase {
 		broker.registerCallbackOnNewLocalJobsActivity(() -> executor.execute(onNewJobQueue2));
 		
 		IntStream.range(0, 600).parallel().forEach(i -> {
-			assertNotNull(broker.createJob("D-" + i, "#" + i, "context" + (i % 2), new JsonObject(), null));
+			assertNotNull(broker.createJob("D-" + i, "#" + i, "context" + i % 2, new JsonObject(), null));
 		});
 		
 		assertEquals(600, broker.getAllJobs().size());
@@ -495,10 +491,10 @@ public class InMemoryBrokerTest extends TestCase {
 		InMemoryBroker broker = new InMemoryBroker(count * 2, 60_000, 1, 1, TimeUnit.MILLISECONDS);
 		
 		IntStream.range(0, count).parallel().forEach(i -> {
-			assertNotNull(broker.createJob("D-" + i, "#" + i, "context" + (i % 2), new JsonObject(), null));
+			assertNotNull(broker.createJob("D-" + i, "#" + i, "context" + i % 2, new JsonObject(), null));
 		});
 		
-		IntStream.range(0, (count / slices) + 1).parallel().forEach(i -> {
+		IntStream.range(0, count / slices + 1).parallel().forEach(i -> {
 			ArrayList<Job> jobs = new ArrayList<>(slices);
 			
 			broker.getNextJobs(Arrays.asList("context0"), () -> {

@@ -28,8 +28,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 
 import com.google.gson.JsonObject;
 
@@ -137,7 +137,7 @@ public class TestEngine extends TestCase {
 		
 		assertEquals(CPU_COUNT, engine.actualFreeWorkers());
 		
-		Logger.getLogger(WorkerThread.class).setLevel(Level.WARN);
+		Configurator.setLevel(WorkerThread.class.getName(), Level.WARN);
 		
 		List<Job> all_jobs = IntStream.range(0, CPU_COUNT * 1000).mapToObj(i -> {
 			return JobUtilityTest.createJob("Test-" + i, "test", createContext(false), null);

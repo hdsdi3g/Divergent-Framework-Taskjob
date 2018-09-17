@@ -74,7 +74,7 @@ public class TestLocalTaskJob extends TestCase {
 		
 		ArrayList<Dog> captured_dogs = new ArrayList<>(1);
 		
-		LocalTaskJob task_job = new LocalTaskJob(10, 1, 1, 1, TimeUnit.SECONDS);
+		InMemoryLocalTaskJob task_job = new InMemoryLocalTaskJob(10, 1, 1, 1, TimeUnit.SECONDS);
 		
 		task_job.registerGenericEngine(1, "DogEngine", gson, Dog.class, () -> {
 			return (referer, context, broker, shouldStopProcessing) -> {

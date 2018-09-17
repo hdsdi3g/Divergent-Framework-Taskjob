@@ -29,13 +29,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import tv.hd3g.divergentframework.taskjob.broker.Broker;
 import tv.hd3g.divergentframework.taskjob.worker.Engine;
 
-public class LiveQueue implements Queue {
-	private static Logger log = Logger.getLogger(LiveQueue.class);
+/**
+ * Connect Engines and Broker, in this Java process.
+ */
+public class LocalQueue implements Queue {
+	private static final Logger log = LogManager.getLogger();
 	
 	private final Broker broker;
 	
@@ -44,7 +48,7 @@ public class LiveQueue implements Queue {
 	
 	private final ThreadPoolExecutor maintenance_pool;
 	
-	public LiveQueue(Broker broker) {
+	public LocalQueue(Broker broker) {
 		this.broker = broker;
 		if (broker == null) {
 			throw new NullPointerException("\"broker\" can't to be null");

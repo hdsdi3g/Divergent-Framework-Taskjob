@@ -22,6 +22,9 @@ import java.util.concurrent.Executor;
 
 import tv.hd3g.divergentframework.taskjob.worker.Engine;
 
+/**
+ * Connect Engines and Broker
+ */
 public interface Queue {
 	
 	public void registerEngine(Engine engine);

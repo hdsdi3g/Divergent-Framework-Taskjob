@@ -29,8 +29,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 
 import com.google.gson.JsonObject;
 
@@ -39,7 +39,6 @@ import tv.hd3g.divergentframework.taskjob.broker.Broker;
 import tv.hd3g.divergentframework.taskjob.broker.Job;
 import tv.hd3g.divergentframework.taskjob.broker.JobUtilityTest;
 import tv.hd3g.divergentframework.taskjob.broker.TaskStatus;
-import tv.hd3g.divergentframework.taskjob.queue.LiveQueue;
 import tv.hd3g.divergentframework.taskjob.worker.Engine;
 
 public class TestLiveQueue extends TestCase {
@@ -130,7 +129,7 @@ public class TestLiveQueue extends TestCase {
 			}
 		}).collect(Collectors.toList()));
 		
-		LiveQueue queue = new LiveQueue(broker);
+		LocalQueue queue = new LocalQueue(broker);
 		
 		Engine engine_1 = new Engine(1, "E1", Arrays.asList("context1"), c_type -> {
 			return (referer, bkr, shouldStopProcessing) -> {
@@ -151,7 +150,7 @@ public class TestLiveQueue extends TestCase {
 		/**
 		 * Only for cosmetics use
 		 */
-		Logger.getLogger("tv.hd3g.taskjob.worker.WorkerThread").setLevel(Level.WARN);
+		Configurator.setLevel(tv.hd3g.divergentframework.taskjob.worker.Worker.WorkerThread_class_name, Level.WARN);
 		
 		queue.registerEngine(engine_1);
 		queue.registerEngine(engine_2);
@@ -216,7 +215,7 @@ public class TestLiveQueue extends TestCase {
 		all_jobs.add(createJob("other_context"));
 		TestBroker broker = new TestBroker(all_jobs);
 		
-		LiveQueue queue = new LiveQueue(broker);
+		LocalQueue queue = new LocalQueue(broker);
 		
 		Engine engine_1 = new Engine(1, "E1", Arrays.asList("context1"), c_type -> {
 			return (referer, bkr, shouldStopProcessing) -> {
@@ -255,7 +254,7 @@ public class TestLiveQueue extends TestCase {
 		all_jobs.add(job_5_duo_rct);
 		TestBroker broker = new TestBroker(all_jobs);
 		
-		LiveQueue queue = new LiveQueue(broker);
+		LocalQueue queue = new LocalQueue(broker);
 		
 		Engine engine_1 = new Engine(1, "E1", Arrays.asList("context1"), c_type -> {
 			return (referer, bkr, shouldStopProcessing) -> {

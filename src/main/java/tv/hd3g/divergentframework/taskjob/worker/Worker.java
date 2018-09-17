@@ -42,4 +42,5 @@ public interface Worker {
 		};
 	}
 	
+	public static String WorkerThread_class_name = WorkerThread.class.getName();
 }
