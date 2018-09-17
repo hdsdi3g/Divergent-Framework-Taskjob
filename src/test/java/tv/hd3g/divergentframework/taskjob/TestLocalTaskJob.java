@@ -23,8 +23,6 @@ import java.util.concurrent.TimeUnit;
 import com.google.gson.Gson;
 
 import junit.framework.TestCase;
-import tv.hd3g.divergentframework.factory.Factory;
-import tv.hd3g.divergentframework.taskjob.LocalTaskJob;
 import tv.hd3g.divergentframework.taskjob.broker.Job;
 
 public class TestLocalTaskJob extends TestCase {
@@ -36,7 +34,7 @@ public class TestLocalTaskJob extends TestCase {
 		public int hashCode() {
 			final int prime = 31;
 			int result = 1;
-			result = prime * result + ((color == null) ? 0 : color.hashCode());
+			result = prime * result + (color == null ? 0 : color.hashCode());
 			result = prime * result + size;
 			return result;
 		}
@@ -68,7 +66,7 @@ public class TestLocalTaskJob extends TestCase {
 	}
 	
 	public void testProcess() {
-		Gson gson = new Factory().createGsonKit().getGson();
+		Gson gson = new Gson();
 		
 		Dog dogo = new Dog();
 		dogo.color = Color.ORANGE;

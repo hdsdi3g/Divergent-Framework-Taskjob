@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonObject;
 
 public final class Job {
@@ -171,13 +170,13 @@ public final class Job {
 	}
 	
 	/**
-	 * @return never null
+	 * @return unmodifiableList, never null
 	 */
-	ImmutableList<UUID> getRelativesJobsUUID() {
+	List<UUID> getRelativesJobsUUID() {
 		if (relatives_sub_jobs == null) {
-			return ImmutableList.of();
+			return List.of();
 		}
-		return ImmutableList.copyOf(relatives_sub_jobs);
+		return Collections.unmodifiableList(relatives_sub_jobs);
 	}
 	
 	Job addSubJob(String description, String context_type, JsonObject context_content, ArrayList<String> context_requirement_tags) {
@@ -251,14 +250,14 @@ public final class Job {
 	}
 	
 	/**
-	 * @return never null
+	 * @return unmodifiableList, never null
 	 */
-	public ImmutableList<String> getContextRequirementTags() {
+	public List<String> getContextRequirementTags() {
 		if (context_requirement_tags == null) {
-			return ImmutableList.of();
+			return List.of();
 		}
 		
-		return ImmutableList.copyOf(context_requirement_tags);
+		return Collections.unmodifiableList(context_requirement_tags);
 	}
 	
 	public String getContextType() {

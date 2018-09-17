@@ -38,8 +38,6 @@ import junit.framework.TestCase;
 import tv.hd3g.divergentframework.taskjob.broker.Job;
 import tv.hd3g.divergentframework.taskjob.broker.JobUtilityTest;
 import tv.hd3g.divergentframework.taskjob.broker.TaskStatus;
-import tv.hd3g.divergentframework.taskjob.worker.Engine;
-import tv.hd3g.divergentframework.taskjob.worker.WorkerThread;
 
 public class TestEngine extends TestCase {
 	

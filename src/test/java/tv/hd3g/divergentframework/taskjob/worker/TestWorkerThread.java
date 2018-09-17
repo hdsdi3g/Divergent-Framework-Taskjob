@@ -49,7 +49,7 @@ public class TestWorkerThread extends TestCase {
 			long msec = referer.getContextContent().get("msec").getAsLong();
 			
 			if (referer.getContextContent().has("error")) {
-				throw new RuntimeException("Error test");
+				throw new RuntimeException("Error test: THIS IS OK, IT'S FOR CHECKS ERROR MANAGEMENT BEHAVIOR");
 			}
 			
 			while (msec > 0 && shouldStopProcessing.get() == false) {
