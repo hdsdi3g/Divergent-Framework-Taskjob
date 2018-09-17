@@ -25,6 +25,9 @@ import java.util.function.Predicate;
 
 import com.google.gson.JsonObject;
 
+/**
+ * Store and retrieve jobs.
+ */
 public interface Broker {
 	
 	List<Job> getJobsByUUID(List<UUID> keys);

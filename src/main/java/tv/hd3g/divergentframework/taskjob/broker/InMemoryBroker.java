@@ -36,6 +36,9 @@ import org.apache.logging.log4j.Logger;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
+/**
+ * Store and retrieve jobs, localy in this instance, with JobStore.
+ */
 public class InMemoryBroker implements Broker {
 	private static final Logger log = LogManager.getLogger();
 	

@@ -33,6 +33,9 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * In memory.
+ */
 class JobStore {
 	private static final Logger log = LogManager.getLogger();
 	
