@@ -32,6 +32,7 @@ import org.apache.logging.log4j.Logger;
 import tv.hd3g.divergentframework.taskjob.broker.Broker;
 import tv.hd3g.divergentframework.taskjob.broker.Job;
 import tv.hd3g.divergentframework.taskjob.broker.TaskStatus;
+import tv.hd3g.divergentframework.taskjob.events.EngineEventObserver;
 
 /**
  * Factory for create specific workers on demand.
@@ -44,6 +45,8 @@ public final class Engine {
 	private final List<String> all_handled_context_types;
 	private final Function<String, Worker> createWorkerByContextType;
 	private final ArrayList<String> context_requirement_tags;
+	
+	private EngineEventObserver observer;
 	
 	public Engine(int max_worker_count, String base_thread_name, List<String> all_handled_context_types, Function<String, Worker> createWorkerByContextType) {
 		runnables = new LinkedBlockingQueue<>(max_worker_count);
@@ -67,6 +70,10 @@ public final class Engine {
 		context_requirement_tags = new ArrayList<>();
 	}
 	
+	public synchronized void setObserver(EngineEventObserver observer) {
+		this.observer = observer;
+	}
+	
 	public String toString() {
 		int current = runnables.size() - runnables.remainingCapacity();
 		return "Engine \"" + base_thread_name + "\" " + current + "/" + runnables.size() + " for " + all_handled_context_types;
@@ -81,6 +88,11 @@ public final class Engine {
 		}
 		context_requirement_tags.clear();
 		context_requirement_tags.addAll(tags);
+		
+		if (observer != null) {
+			observer.onEngineChangeContextRequirementTags(this);
+		}
+		
 		return this;
 	}
 	
@@ -96,6 +108,10 @@ public final class Engine {
 	 * non-blocking,
 	 */
 	public void stopCurrentAll() {
+		if (observer != null) {
+			observer.onEngineStop(this);
+		}
+		
 		runnables.stream().filter(t -> {
 			return t.isAlive();
 		}).forEach(t -> {
@@ -104,6 +120,10 @@ public final class Engine {
 	}
 	
 	public CompletableFuture<Void> stopCurrentAll(Executor executor) {
+		if (observer != null) {
+			observer.onEngineStop(this);
+		}
+		
 		List<CompletableFuture<Void>> cf = runnables.stream().filter(t -> {
 			return t.isAlive();
 		}).map(t -> {
@@ -163,6 +183,10 @@ public final class Engine {
 		broker.switchStatus(job, TaskStatus.PREPARING);
 		
 		w_t.setAfterProcess(() -> {
+			if (observer != null) {
+				observer.onEngineEndsProcess(this, job);
+			}
+			
 			log.trace("Remove item " + w_t + " from runnables list");
 			runnables.remove(w_t);
 			
@@ -171,6 +195,10 @@ public final class Engine {
 		
 		log.trace("Start worker " + w_t);
 		w_t.start();
+		
+		if (observer != null) {
+			observer.onEngineStartProcess(this, job);
+		}
 		
 		return true;
 	}

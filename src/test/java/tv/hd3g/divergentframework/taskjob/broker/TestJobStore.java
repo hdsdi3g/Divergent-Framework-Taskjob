@@ -29,13 +29,13 @@ import com.google.gson.JsonObject;
 
 import junit.framework.TestCase;
 import tv.hd3g.divergentframework.taskjob.broker.Job;
-import tv.hd3g.divergentframework.taskjob.broker.JobStore;
+import tv.hd3g.divergentframework.taskjob.broker.InMemoryJobStore;
 import tv.hd3g.divergentframework.taskjob.broker.TaskStatus;
 
 public class TestJobStore extends TestCase {
 	
 	public void testPushPull() {
-		JobStore store = new JobStore();
+		InMemoryJobStore store = new InMemoryJobStore();
 		
 		Job job = JobUtilityTest.createJob("Test", "Test", new JsonObject(), null);
 		assertTrue(store.put(job));
@@ -73,7 +73,7 @@ public class TestJobStore extends TestCase {
 	public void testParallelPushPull() {
 		List<Job> all_jobs = IntStream.range(0, 100_000).mapToObj(i -> JobUtilityTest.createJob("Test", "Test", new JsonObject(), null)).collect(Collectors.toList());
 		
-		JobStore store = new JobStore();
+		InMemoryJobStore store = new InMemoryJobStore();
 		
 		/**
 		 * Test bulk simple put
@@ -152,7 +152,7 @@ public class TestJobStore extends TestCase {
 		List<Job> all_shuffle_jobs = new ArrayList<>(all_jobs);
 		Collections.shuffle(all_shuffle_jobs);
 		
-		JobStore store = new JobStore();
+		InMemoryJobStore store = new InMemoryJobStore();
 		
 		Thread t_push = new Thread(() -> {
 			all_shuffle_jobs.stream().forEach(job -> {

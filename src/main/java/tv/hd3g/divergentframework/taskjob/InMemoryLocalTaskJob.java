@@ -16,7 +16,11 @@
 */
 package tv.hd3g.divergentframework.taskjob;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -29,6 +33,7 @@ import com.google.gson.Gson;
 
 import tv.hd3g.divergentframework.taskjob.broker.InMemoryBroker;
 import tv.hd3g.divergentframework.taskjob.broker.Job;
+import tv.hd3g.divergentframework.taskjob.events.EngineEventObserver;
 import tv.hd3g.divergentframework.taskjob.queue.LocalQueue;
 import tv.hd3g.divergentframework.taskjob.queue.Queue;
 import tv.hd3g.divergentframework.taskjob.worker.Engine;
@@ -44,8 +49,20 @@ public class InMemoryLocalTaskJob extends InMemoryBroker implements Queue {
 	private final LocalQueue queue;
 	
 	public InMemoryLocalTaskJob(int max_job_count, long abandoned_jobs_retention_time, long done_jobs_retention_time, long error_jobs_retention_time, TimeUnit unit) {
-		super(max_job_count, abandoned_jobs_retention_time, done_jobs_retention_time, error_jobs_retention_time, unit);
-		queue = new LocalQueue(this);
+		this(max_job_count, abandoned_jobs_retention_time, done_jobs_retention_time, error_jobs_retention_time, unit, new HashMap<>(), new ArrayList<>());
+	}
+	
+	public InMemoryLocalTaskJob(int max_job_count, long abandoned_jobs_retention_time, long done_jobs_retention_time, long error_jobs_retention_time, TimeUnit unit, Map<UUID, Job> external_jobs_by_uuid, List<Engine> external_engine_list) {
+		super(max_job_count, abandoned_jobs_retention_time, done_jobs_retention_time, error_jobs_retention_time, unit, external_jobs_by_uuid);
+		queue = new LocalQueue(this, external_engine_list);
+	}
+	
+	/**
+	 * @return this
+	 */
+	public InMemoryLocalTaskJob setEngineObserver(EngineEventObserver engine_observer) {
+		queue.setEngineObserver(engine_observer);
+		return this;
 	}
 	
 	public void registerEngine(Engine engine) {

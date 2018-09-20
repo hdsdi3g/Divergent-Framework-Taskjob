@@ -26,15 +26,11 @@ import java.util.function.Predicate;
 
 import com.google.gson.JsonObject;
 
-import tv.hd3g.divergentframework.taskjob.broker.Broker;
-import tv.hd3g.divergentframework.taskjob.broker.Job;
-import tv.hd3g.divergentframework.taskjob.broker.TaskStatus;
-
 public class JobUtilityTest {
 	
 	public static Job createJob(String description, String context_type, JsonObject context_content, ArrayList<String> context_requirement_tags) {
 		Job j = new Job();
-		j.init(description, context_type, context_content, context_requirement_tags);
+		j.init(description, context_type, context_content, context_requirement_tags, null);
 		return j;
 	}
 	

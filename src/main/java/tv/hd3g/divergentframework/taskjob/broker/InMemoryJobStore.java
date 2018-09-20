@@ -20,6 +20,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.Condition;
@@ -37,22 +38,26 @@ import org.apache.logging.log4j.Logger;
 /**
  * In memory.
  */
-class JobStore {
+class InMemoryJobStore {
 	private static final Logger log = LogManager.getLogger();
 	
 	private final ReentrantLock lock;
 	private final Condition lock_condition;
 	private boolean in_write_operation;
 	
-	private final HashMap<UUID, Job> jobs_by_uuid;
+	private final Map<UUID, Job> jobs_by_uuid;
 	private final HashSet<UUID> waiting_jobs;
 	private final HashSet<UUID> others_jobs;
 	
-	JobStore() {
+	InMemoryJobStore() {
+		this(new HashMap<>());
+	}
+	
+	InMemoryJobStore(Map<UUID, Job> external_jobs_by_uuid) {
 		lock = new ReentrantLock();
 		lock_condition = lock.newCondition();
 		
-		jobs_by_uuid = new HashMap<>();
+		jobs_by_uuid = external_jobs_by_uuid;
 		waiting_jobs = new HashSet<>();
 		others_jobs = new HashSet<>();
 	}

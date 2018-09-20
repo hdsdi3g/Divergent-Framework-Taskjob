@@ -19,8 +19,10 @@ package tv.hd3g.divergentframework.taskjob.broker;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -36,6 +38,8 @@ import org.apache.logging.log4j.Logger;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
+import tv.hd3g.divergentframework.taskjob.events.JobEventObserver;
+
 /**
  * Store and retrieve jobs, localy in this instance, with JobStore.
  */
@@ -46,11 +50,13 @@ public class InMemoryBroker implements Broker {
 	private long abandoned_jobs_retention_time;
 	private long done_jobs_retention_time;
 	private long error_jobs_retention_time;
-	private final JobStore store;
+	private final InMemoryJobStore store;
 	private final ArrayList<Runnable> on_new_local_jobs_activity_callbacks;
 	private final ThreadPoolExecutor executor;
 	
-	public InMemoryBroker(int max_job_count, long abandoned_jobs_retention_time, long done_jobs_retention_time, long error_jobs_retention_time, TimeUnit unit) {
+	private JobEventObserver job_observer;
+	
+	public InMemoryBroker(int max_job_count, long abandoned_jobs_retention_time, long done_jobs_retention_time, long error_jobs_retention_time, TimeUnit unit, Map<UUID, Job> external_jobs_by_uuid) {
 		this.max_job_count = max_job_count;
 		this.abandoned_jobs_retention_time = unit.toMillis(abandoned_jobs_retention_time);
 		this.done_jobs_retention_time = unit.toMillis(done_jobs_retention_time);
@@ -65,7 +71,19 @@ public class InMemoryBroker implements Broker {
 			return t;
 		});
 		
-		store = new JobStore();
+		store = new InMemoryJobStore(external_jobs_by_uuid);
+	}
+	
+	public InMemoryBroker(int max_job_count, long abandoned_jobs_retention_time, long done_jobs_retention_time, long error_jobs_retention_time, TimeUnit unit) {
+		this(max_job_count, abandoned_jobs_retention_time, done_jobs_retention_time, error_jobs_retention_time, unit, new HashMap<>());
+	}
+	
+	/**
+	 * @return this
+	 */
+	public InMemoryBroker setJobObserver(JobEventObserver job_observer) {
+		this.job_observer = job_observer;
+		return this;
 	}
 	
 	/**
@@ -185,7 +203,7 @@ public class InMemoryBroker implements Broker {
 		if (context_requirement_tags != null) {
 			l_context_requirement_tags = new ArrayList<>(context_requirement_tags);
 		}
-		job.init(description, context_type, context_content, l_context_requirement_tags);
+		job.init(description, context_type, context_content, l_context_requirement_tags, job_observer);
 		job.setExternalReference(external_reference);
 		
 		if (store.put(job) == false) {

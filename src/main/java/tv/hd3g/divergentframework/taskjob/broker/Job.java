@@ -23,6 +23,9 @@ import java.util.UUID;
 
 import com.google.gson.JsonObject;
 
+import tv.hd3g.divergentframework.taskjob.events.JobEventObserver;
+import tv.hd3g.divergentframework.taskjob.events.JobEventObserver.JobUpdateSubject;
+
 public final class Job {
 	// private static Logger log = Logger.getLogger(Job.class);
 	public static final String JAVA_CLASS_PREFIX_CONTEXT_TYPE = "java:class:";
@@ -47,6 +50,8 @@ public final class Job {
 	private String external_reference;
 	private int actual_progression_value;
 	private int max_progression_value;
+	
+	private JobEventObserver observer;
 	
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
@@ -90,7 +95,9 @@ public final class Job {
 		return sb.toString();
 	}
 	
-	UUID init(String description, String context_type, JsonObject context_content, ArrayList<String> context_requirement_tags) {
+	UUID init(String description, String context_type, JsonObject context_content, ArrayList<String> context_requirement_tags, JobEventObserver observer) {
+		this.observer = observer;
+		
 		if (description == null) {
 			this.description = "";
 		} else {
@@ -115,6 +122,10 @@ public final class Job {
 		end_date = 0;
 		relatives_sub_jobs = new ArrayList<>();
 		
+		if (observer != null) {
+			observer.onJobAfterInit(this);
+		}
+		
 		return key;
 	}
 	
@@ -123,6 +134,11 @@ public final class Job {
 	 */
 	synchronized Job setExternalReference(String external_reference) {
 		this.external_reference = external_reference;
+		
+		if (observer != null) {
+			observer.onJobUpdate(this, JobUpdateSubject.EXTERNAL_REFERENCE);
+		}
+		
 		return this;
 	}
 	
@@ -131,6 +147,11 @@ public final class Job {
 	 */
 	synchronized Job setLinkedJob(UUID linked_job) {
 		this.linked_job = linked_job;
+		
+		if (observer != null) {
+			observer.onJobUpdate(this, JobUpdateSubject.LINKED_JOB);
+		}
+		
 		return this;
 	}
 	
@@ -148,6 +169,11 @@ public final class Job {
 	synchronized Job updateProgression(int actual_progression_value, int max_progression_value) {
 		this.actual_progression_value = actual_progression_value;
 		this.max_progression_value = max_progression_value;
+		
+		if (observer != null) {
+			observer.onJobUpdateProgression(this);
+		}
+		
 		return this;
 	}
 	
@@ -156,6 +182,11 @@ public final class Job {
 	 */
 	synchronized Job setContextRequirementTags(ArrayList<String> context_requirement_tags) {
 		this.context_requirement_tags = context_requirement_tags;
+		
+		if (observer != null) {
+			observer.onJobUpdate(this, JobUpdateSubject.CONTEXT_RQMNT_TAGS);
+		}
+		
 		return this;
 	}
 	
@@ -181,7 +212,7 @@ public final class Job {
 	
 	Job addSubJob(String description, String context_type, JsonObject context_content, ArrayList<String> context_requirement_tags) {
 		Job sub_job = new Job();
-		UUID new_uuid = sub_job.setLinkedJob(key).init(description, context_type, context_content, context_requirement_tags);
+		UUID new_uuid = sub_job.setLinkedJob(key).init(description, context_type, context_content, context_requirement_tags, observer);
 		
 		synchronized (this) {
 			if (relatives_sub_jobs == null) {
@@ -193,6 +224,10 @@ public final class Job {
 			relatives_sub_jobs.add(new_uuid);
 		}
 		
+		if (observer != null) {
+			observer.onJobAddSubJob(this, sub_job);
+		}
+		
 		return sub_job;
 	}
 	
@@ -202,6 +237,11 @@ public final class Job {
 	synchronized Job switchToError(Throwable e) {
 		last_error_message = e.getMessage();
 		switchStatus(TaskStatus.ERROR);
+		
+		if (observer != null) {
+			observer.onJobUpdate(this, JobUpdateSubject.SWITCH_TO_ERROR);
+		}
+		
 		return this;
 	}
 	
@@ -219,6 +259,10 @@ public final class Job {
 		}
 		if (status.statusSwitchShouldChangeJobEndDate()) {
 			end_date = System.currentTimeMillis();
+		}
+		
+		if (observer != null) {
+			observer.onJobUpdate(this, JobUpdateSubject.SWITCH_STATUS);
 		}
 		
 		return this;
@@ -239,6 +283,11 @@ public final class Job {
 		if (context_content == null) {
 			throw new NullPointerException("\"context_content\" can't to be null");
 		}
+		
+		if (observer != null) {
+			observer.onJobUpdate(this, JobUpdateSubject.CONTEXT_CONTENT);
+		}
+		
 		return this;
 	}
 	

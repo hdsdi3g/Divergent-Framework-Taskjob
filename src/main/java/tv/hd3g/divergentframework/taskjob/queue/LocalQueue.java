@@ -33,6 +33,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import tv.hd3g.divergentframework.taskjob.broker.Broker;
+import tv.hd3g.divergentframework.taskjob.events.EngineEventObserver;
 import tv.hd3g.divergentframework.taskjob.worker.Engine;
 
 /**
@@ -43,12 +44,18 @@ public class LocalQueue implements Queue {
 	
 	private final Broker broker;
 	
-	private final ArrayList<Engine> engines;
+	private final List<Engine> engines;
 	private volatile boolean pending_stop;
 	
 	private final ThreadPoolExecutor maintenance_pool;
 	
+	private EngineEventObserver engine_observer;
+	
 	public LocalQueue(Broker broker) {
+		this(broker, new ArrayList<>());
+	}
+	
+	public LocalQueue(Broker broker, List<Engine> external_engine_list) {
 		this.broker = broker;
 		if (broker == null) {
 			throw new NullPointerException("\"broker\" can't to be null");
@@ -61,7 +68,7 @@ public class LocalQueue implements Queue {
 			return t;
 		});
 		
-		engines = new ArrayList<>();
+		engines = external_engine_list;
 		pending_stop = false;
 		
 		broker.registerCallbackOnNewLocalJobsActivity(() -> {
@@ -72,6 +79,14 @@ public class LocalQueue implements Queue {
 			log.trace("Callback queue for some new action");
 			searchAndStartNewActions();
 		});
+	}
+	
+	/**
+	 * @return this
+	 */
+	public LocalQueue setEngineObserver(EngineEventObserver engine_observer) {
+		this.engine_observer = engine_observer;
+		return this;
 	}
 	
 	public List<Engine> getEnginesByContextType(String context_name) {
@@ -94,6 +109,8 @@ public class LocalQueue implements Queue {
 			}
 			engines.add(engine);
 		}
+		
+		engine.setObserver(engine_observer);
 		
 		searchAndStartNewActions();
 	}
