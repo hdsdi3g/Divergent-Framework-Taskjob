@@ -19,7 +19,7 @@ package tv.hd3g.divergentframework.taskjob.events;
 import tv.hd3g.divergentframework.taskjob.broker.Job;
 
 @Deprecated
-public interface EventObserver {// XXX delete after dispatch
+public interface oldEventObserver {// XXX delete after dispatch
 	
 	void queueSetPrepareToStop();
 	

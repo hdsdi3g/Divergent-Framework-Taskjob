@@ -19,7 +19,7 @@ package tv.hd3g.divergentframework.taskjob.events;
 import tv.hd3g.divergentframework.taskjob.broker.Job;
 import tv.hd3g.divergentframework.taskjob.worker.Engine;
 
-public interface EngineEventObserver {// TODO implement
+public interface EngineEventObserver {
 	
 	void onEngineChangeContextRequirementTags(Engine engine);
 	

@@ -18,7 +18,7 @@ package tv.hd3g.divergentframework.taskjob.events;
 
 import tv.hd3g.divergentframework.taskjob.broker.Job;
 
-public interface JobEventObserver { // XXX implement
+public interface JobEventObserver {
 	
 	/**
 	 * Can be triggered before the job has to be added to the current job list
