@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.Condition;
@@ -207,25 +208,31 @@ class InMemoryJobStore {
 		});
 	}
 	
-	void checkConsistency() {
-		if (jobs_by_uuid.size() != waiting_jobs.size() + others_jobs.size()) {
-			throw new RuntimeException("Invalid lists sizes, jobs_by_uuid: " + jobs_by_uuid.size() + ", waiting_jobs: " + waiting_jobs.size() + ", others_jobs: " + others_jobs.size());
-		}
-		
-		waiting_jobs.forEach(uuid -> {
-			if (jobs_by_uuid.containsKey(uuid) == false) {
-				throw new NullPointerException("Missing " + uuid + " from waiting_jobs in jobs_by_uuid");
-			} else if (jobs_by_uuid.get(uuid).getStatus() != TaskStatus.WAITING) {
-				throw new RuntimeException("Invalid job list position, " + jobs_by_uuid.get(uuid) + " can't be in WAITING list because it's in " + jobs_by_uuid.get(uuid).getStatus() + " state");
+	Optional<RuntimeException> checkConsistency() {
+		return syncRead(() -> {
+			if (jobs_by_uuid.size() != waiting_jobs.size() + others_jobs.size()) {
+				return Optional.of(new IllegalStateException("Invalid lists sizes, jobs_by_uuid: " + jobs_by_uuid.size() + ", waiting_jobs: " + waiting_jobs.size() + ", others_jobs: " + others_jobs.size()));
 			}
-		});
-		
-		others_jobs.forEach(uuid -> {
-			if (jobs_by_uuid.containsKey(uuid) == false) {
-				throw new NullPointerException("Missing " + uuid + " from others_jobs in jobs_by_uuid");
-			} else if (jobs_by_uuid.get(uuid).getStatus() == TaskStatus.WAITING | jobs_by_uuid.get(uuid).getStatus() == TaskStatus.DONE) {
-				throw new RuntimeException("Invalid job list position, " + jobs_by_uuid.get(uuid) + " can't be in OTHER list because it's in " + jobs_by_uuid.get(uuid).getStatus() + " state");
-			}
+			
+			return waiting_jobs.stream().map(uuid -> {
+				if (jobs_by_uuid.containsKey(uuid) == false) {
+					return new NullPointerException("Missing " + uuid + " from waiting_jobs in jobs_by_uuid");
+				} else if (jobs_by_uuid.get(uuid).getStatus() != TaskStatus.WAITING) {
+					return new IllegalStateException("Invalid job list position, " + jobs_by_uuid.get(uuid) + " can't be in WAITING list because it's in " + jobs_by_uuid.get(uuid).getStatus() + " state");
+				} else {
+					return null;
+				}
+			}).filter(e -> e != null).findFirst().or(() -> {
+				return others_jobs.stream().map(uuid -> {
+					if (jobs_by_uuid.containsKey(uuid) == false) {
+						return new NullPointerException("Missing " + uuid + " from others_jobs in jobs_by_uuid");
+					} else if (jobs_by_uuid.get(uuid).getStatus() == TaskStatus.WAITING | jobs_by_uuid.get(uuid).getStatus() == TaskStatus.DONE) {
+						return new IllegalStateException("Invalid job list position, " + jobs_by_uuid.get(uuid) + " can't be in OTHER list because it's in " + jobs_by_uuid.get(uuid).getStatus() + " state");
+					} else {
+						return null;
+					}
+				}).filter(e -> e != null).findFirst();
+			});
 		});
 	}
 	

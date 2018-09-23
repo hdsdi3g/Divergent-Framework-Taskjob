@@ -23,8 +23,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
@@ -52,7 +55,10 @@ public class InMemoryBroker implements Broker {
 	private long error_jobs_retention_time;
 	private final InMemoryJobStore store;
 	private final ArrayList<Runnable> on_new_local_jobs_activity_callbacks;
+	
 	private final ThreadPoolExecutor executor;
+	private final ScheduledThreadPoolExecutor sch_maintenance_exec;
+	private final ScheduledFuture<?> cleanup_task;
 	
 	private JobEventObserver job_observer;
 	
@@ -70,12 +76,44 @@ public class InMemoryBroker implements Broker {
 			t.setDaemon(true);
 			return t;
 		});
-		
 		store = new InMemoryJobStore(external_jobs_by_uuid);
+		
+		long min_delay_to_update = Math.min(Math.min(abandoned_jobs_retention_time, done_jobs_retention_time), error_jobs_retention_time);
+		log.debug("Set regular flush task every " + min_delay_to_update + " " + unit.name().toLowerCase());
+		
+		sch_maintenance_exec = new ScheduledThreadPoolExecutor(1, r -> {
+			Thread t = new Thread(r);
+			t.setDaemon(true);
+			t.setPriority(Thread.MIN_PRIORITY);
+			t.setName("RegularFlushTask");
+			return t;
+		});
+		
+		cleanup_task = sch_maintenance_exec.scheduleWithFixedDelay(() -> {
+			if (storeSize() > 0) {
+				executor.execute(() -> {
+					log.info("Flush task list");
+					flush();
+				});
+			}
+		}, min_delay_to_update, min_delay_to_update, unit);
 	}
 	
 	public InMemoryBroker(int max_job_count, long abandoned_jobs_retention_time, long done_jobs_retention_time, long error_jobs_retention_time, TimeUnit unit) {
 		this(max_job_count, abandoned_jobs_retention_time, done_jobs_retention_time, error_jobs_retention_time, unit, new HashMap<>());
+	}
+	
+	public Optional<RuntimeException> checkStoreConsistency() {
+		return store.checkConsistency();
+	}
+	
+	public InMemoryBroker cancelCleanUpTask() {
+		cleanup_task.cancel(false);
+		return this;
+	}
+	
+	public int storeSize() {
+		return store.size();
 	}
 	
 	/**
@@ -101,7 +139,7 @@ public class InMemoryBroker implements Broker {
 						if (relatives.isEmpty() == false) {
 							if (relatives.stream().map(sub_job_uuid -> {
 								return uuid_resolver.apply(sub_job_uuid);
-							}).anyMatch(sub_job -> {
+							}).filter(sub_job -> sub_job != null).anyMatch(sub_job -> {
 								return sub_job.getStatus().isDone() == false;
 							})) {
 								/**

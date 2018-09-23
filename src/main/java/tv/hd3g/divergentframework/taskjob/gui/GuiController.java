@@ -18,37 +18,31 @@ package tv.hd3g.divergentframework.taskjob.gui;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.UUID;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.ObservableList;
-import javafx.collections.ObservableMap;
 import javafx.fxml.FXML;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import tv.hd3g.divergentframework.taskjob.broker.Job;
-import tv.hd3g.divergentframework.taskjob.worker.Engine;
 
 public class GuiController {
 	private static Logger log = LogManager.getLogger();
 	
 	private Stage stage;
 	private BorderPane root;
-	private ObservableList<Engine> engines;
-	private ObservableMap<UUID, Job> jobs;
 	
-	void startApp(Stage stage, BorderPane root, ObservableMap<UUID, Job> jobs, ObservableList<Engine> engines) {
+	void startApp(Stage stage, BorderPane root) {
 		this.stage = stage;
 		this.root = root;
-		this.engines = engines;
-		this.jobs = jobs;
 		
 		Scene scene = new Scene(root);
 		// scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
@@ -72,7 +66,12 @@ public class GuiController {
 		});
 		
 		tree_table_col_type.setCellValueFactory(p -> {
-			return new ReadOnlyStringWrapper(p.getValue().getValue().getContextType());
+			String ctx_type = p.getValue().getValue().getContextType();
+			if (ctx_type.startsWith(Job.JAVA_CLASS_PREFIX_CONTEXT_TYPE)) {
+				return new ReadOnlyStringWrapper(ctx_type.substring(Job.JAVA_CLASS_PREFIX_CONTEXT_TYPE.length()));
+			} else {
+				return new ReadOnlyStringWrapper(ctx_type + " (not java)");
+			}
 		});
 		
 		tree_table_col_status.setCellValueFactory(p -> {
@@ -101,16 +100,36 @@ public class GuiController {
 		final SimpleDateFormat date_format = new SimpleDateFormat("HH:mm:ss");
 		
 		tree_table_col_date_create.setCellValueFactory(p -> {
-			return new ReadOnlyStringWrapper(date_format.format(new Date(p.getValue().getValue().getCreateDate())));
+			long date = p.getValue().getValue().getCreateDate();
+			if (date > 0) {
+				return new ReadOnlyStringWrapper(date_format.format(new Date(date)));
+			} else {
+				return new ReadOnlyStringWrapper("");
+			}
 		});
 		tree_table_col_date_start.setCellValueFactory(p -> {
-			return new ReadOnlyStringWrapper(date_format.format(new Date(p.getValue().getValue().getStartDate())));
+			long date = p.getValue().getValue().getStartDate();
+			if (date > 0) {
+				return new ReadOnlyStringWrapper(date_format.format(new Date(date)));
+			} else {
+				return new ReadOnlyStringWrapper("");
+			}
 		});
 		tree_table_col_date_end.setCellValueFactory(p -> {
-			return new ReadOnlyStringWrapper(date_format.format(new Date(p.getValue().getValue().getEndDate())));
+			long date = p.getValue().getValue().getEndDate();
+			if (date > 0) {
+				return new ReadOnlyStringWrapper(date_format.format(new Date(date)));
+			} else {
+				return new ReadOnlyStringWrapper("");
+			}
 		});
 		
-		// tree_table_jobs.getRoot().getChildren().set XXX plug this !!
+		tree_table_jobs.setShowRoot(false);
+		tree_table_jobs.setRoot(new TreeItem<>());
+	}
+	
+	public ObservableList<TreeItem<Job>> getTableJobContent() {
+		return tree_table_jobs.getRoot().getChildren();
 	}
 	
 	/*

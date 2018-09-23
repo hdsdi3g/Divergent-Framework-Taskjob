@@ -28,9 +28,6 @@ import java.util.stream.IntStream;
 import com.google.gson.JsonObject;
 
 import junit.framework.TestCase;
-import tv.hd3g.divergentframework.taskjob.broker.Job;
-import tv.hd3g.divergentframework.taskjob.broker.InMemoryJobStore;
-import tv.hd3g.divergentframework.taskjob.broker.TaskStatus;
 
 public class TestJobStore extends TestCase {
 	
@@ -67,7 +64,10 @@ public class TestJobStore extends TestCase {
 		});
 		assertEquals(job, o_job.get());
 		
-		store.checkConsistency();
+		Optional<RuntimeException> o_error = store.checkConsistency();
+		if (o_error.isPresent()) {
+			throw o_error.get();
+		}
 	}
 	
 	public void testParallelPushPull() {
@@ -102,7 +102,10 @@ public class TestJobStore extends TestCase {
 			assertTrue(all_jobs_uuid.contains(job.getKey()));
 		});
 		
-		store.checkConsistency();
+		Optional<RuntimeException> o_error = store.checkConsistency();
+		if (o_error.isPresent()) {
+			throw o_error.get();
+		}
 		
 		/**
 		 * Test bulk simple update
@@ -114,7 +117,10 @@ public class TestJobStore extends TestCase {
 			});
 		});
 		
-		store.checkConsistency();
+		o_error = store.checkConsistency();
+		if (o_error.isPresent()) {
+			throw o_error.get();
+		}
 		
 		/**
 		 * Test bulk update
@@ -127,7 +133,10 @@ public class TestJobStore extends TestCase {
 		
 		assertEquals(10, store.waitingJobCount());
 		
-		store.checkConsistency();
+		o_error = store.checkConsistency();
+		if (o_error.isPresent()) {
+			throw o_error.get();
+		}
 		
 		/**
 		 * Test bulk read
@@ -144,7 +153,10 @@ public class TestJobStore extends TestCase {
 		assertEquals(all_jobs.size() - 10, store.size());
 		assertEquals(10, store.waitingJobCount());
 		
-		store.checkConsistency();
+		o_error = store.checkConsistency();
+		if (o_error.isPresent()) {
+			throw o_error.get();
+		}
 	}
 	
 	public void testRandomPushPull() {

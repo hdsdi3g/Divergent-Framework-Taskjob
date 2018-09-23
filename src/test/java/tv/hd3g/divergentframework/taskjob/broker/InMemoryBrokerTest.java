@@ -224,7 +224,7 @@ public class InMemoryBrokerTest extends TestCase {
 	public void testFlushAbandonedJobs() throws Exception {
 		long wait_duration = 100;
 		
-		InMemoryBroker broker = new InMemoryBroker(10, wait_duration, 100_000 * wait_duration, 100_000 * wait_duration, TimeUnit.MILLISECONDS);
+		InMemoryBroker broker = new InMemoryBroker(10, wait_duration, 100_000 * wait_duration, 100_000 * wait_duration, TimeUnit.MILLISECONDS).cancelCleanUpTask();
 		Job job = broker.createJob("D1", "ER1", "context1", new JsonObject(), null);
 		
 		List<Job> search = broker.getJobsByUUID(Arrays.asList(job.getKey()));
@@ -260,7 +260,7 @@ public class InMemoryBrokerTest extends TestCase {
 	public void testFlushDoneJobs() throws Exception {
 		long wait_duration = 100;
 		
-		InMemoryBroker broker = new InMemoryBroker(10, 100_000 * wait_duration, wait_duration, 100_000 * wait_duration, TimeUnit.MILLISECONDS);
+		InMemoryBroker broker = new InMemoryBroker(10, 100_000 * wait_duration, wait_duration, 100_000 * wait_duration, TimeUnit.MILLISECONDS).cancelCleanUpTask();
 		Job job = broker.createJob("D1", "ER1", "context1", new JsonObject(), null);
 		
 		Thread.sleep(wait_duration + 10);
@@ -315,7 +315,7 @@ public class InMemoryBrokerTest extends TestCase {
 	public void testFlushErrorJobs() throws Exception {
 		long wait_duration = 100;
 		
-		InMemoryBroker broker = new InMemoryBroker(10, 100_000 * wait_duration, 100_000 * wait_duration, wait_duration, TimeUnit.MILLISECONDS);
+		InMemoryBroker broker = new InMemoryBroker(10, 100_000 * wait_duration, 100_000 * wait_duration, wait_duration, TimeUnit.MILLISECONDS).cancelCleanUpTask();
 		Job job = broker.createJob("D1", "ER1", "context1", new JsonObject(), null);
 		
 		Thread.sleep(wait_duration + 10);
@@ -488,7 +488,7 @@ public class InMemoryBrokerTest extends TestCase {
 		int count = 100_000;
 		int slices = count / 10;
 		
-		InMemoryBroker broker = new InMemoryBroker(count * 2, 60_000, 1, 1, TimeUnit.MILLISECONDS);
+		InMemoryBroker broker = new InMemoryBroker(count * 2, 60_000, 1, 1, TimeUnit.MILLISECONDS).cancelCleanUpTask();
 		
 		IntStream.range(0, count).parallel().forEach(i -> {
 			assertNotNull(broker.createJob("D-" + i, "#" + i, "context" + i % 2, new JsonObject(), null));
@@ -525,6 +525,28 @@ public class InMemoryBrokerTest extends TestCase {
 				throw new RuntimeException("Invalid job context0: " + job);
 			}
 		});
+	}
+	
+	public void testAutoFlush() throws Exception {
+		InMemoryBroker broker = new InMemoryBroker(2, 10, 10, 10, TimeUnit.MILLISECONDS);
+		
+		assertEquals(0, broker.getAllJobs().size());
+		assertEquals(0, broker.storeSize());
+		
+		broker.createJob("D", "#", "context", new JsonObject(), null);
+		
+		assertEquals(1, broker.getAllJobs().size());
+		assertEquals(1, broker.storeSize());
+		
+		broker.createJob("D2", "#", "context", new JsonObject(), null);
+		
+		assertEquals(2, broker.getAllJobs().size());
+		assertEquals(2, broker.storeSize());
+		
+		Thread.sleep(20);
+		
+		assertEquals(0, broker.getAllJobs().size());
+		assertEquals(0, broker.storeSize());
 	}
 	
 }

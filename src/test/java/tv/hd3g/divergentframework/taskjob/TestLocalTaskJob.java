@@ -65,7 +65,7 @@ public class TestLocalTaskJob extends TestCase {
 		
 	}
 	
-	public void testProcess() {
+	public void testProcess() throws InterruptedException {
 		Gson gson = new Gson();
 		
 		Dog dogo = new Dog();
@@ -74,7 +74,7 @@ public class TestLocalTaskJob extends TestCase {
 		
 		ArrayList<Dog> captured_dogs = new ArrayList<>(1);
 		
-		InMemoryLocalTaskJob task_job = new InMemoryLocalTaskJob(10, 1, 1, 1, TimeUnit.SECONDS);
+		InMemoryLocalTaskJob task_job = new InMemoryLocalTaskJob(10, 10, 10, 10, TimeUnit.MILLISECONDS);
 		
 		task_job.registerGenericEngine(1, "DogEngine", gson, Dog.class, () -> {
 			return (referer, context, broker, shouldStopProcessing) -> {

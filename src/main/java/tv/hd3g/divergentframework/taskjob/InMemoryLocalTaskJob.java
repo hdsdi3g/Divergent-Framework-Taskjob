@@ -57,6 +57,8 @@ public class InMemoryLocalTaskJob extends InMemoryBroker implements Queue {
 		queue = new LocalQueue(this, external_engine_list);
 	}
 	
+	// TODO2 export checkStoreConsistency() to a callback system
+	
 	/**
 	 * @return this
 	 */
@@ -91,6 +93,7 @@ public class InMemoryLocalTaskJob extends InMemoryBroker implements Queue {
 	}
 	
 	public CompletableFuture<Void> prepareToStop(Executor executor) {
+		cancelCleanUpTask();
 		return queue.prepareToStop(executor);
 	}
 	

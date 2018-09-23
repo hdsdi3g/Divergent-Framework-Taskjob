@@ -309,6 +309,9 @@ public final class Job {
 		return Collections.unmodifiableList(context_requirement_tags);
 	}
 	
+	/**
+	 * @return can be started with JAVA_CLASS_PREFIX_CONTEXT_TYPE
+	 */
 	public String getContextType() {
 		return context_type;
 	}
