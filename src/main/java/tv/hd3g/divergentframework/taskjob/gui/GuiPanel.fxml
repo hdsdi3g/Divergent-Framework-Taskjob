@@ -11,24 +11,36 @@
    <center>
       <SplitPane dividerPositions="0.5" orientation="VERTICAL" prefHeight="200.0" prefWidth="160.0" BorderPane.alignment="CENTER">
          <items>
-            <TreeTableView fx:id="tree_table_jobs" prefHeight="200.0" prefWidth="200.0" showRoot="false">
+            <TreeTableView fx:id="table_job" prefHeight="200.0" prefWidth="200.0" showRoot="false">
               <columns>
-                <TreeTableColumn fx:id="tree_table_col_name" editable="false" prefWidth="292.0" text="Description" />
-                <TreeTableColumn fx:id="tree_table_col_type" editable="false" prefWidth="191.0" text="Type" />
-                  <TreeTableColumn fx:id="tree_table_col_status" editable="false" minWidth="0.0" prefWidth="93.0" text="Status" />
-                  <TreeTableColumn fx:id="tree_table_col_extref" prefWidth="75.0" text="Ref" />
-                  <TreeTableColumn fx:id="tree_table_col_progress" editable="false" prefWidth="121.0" text="Progress" />
-                  <TreeTableColumn fx:id="tree_table_col_date_create" prefWidth="75.0" text="Create" />
-                  <TreeTableColumn fx:id="tree_table_col_date_start" prefWidth="75.0" text="Start" />
-                  <TreeTableColumn fx:id="tree_table_col_date_end" prefWidth="75.0" text="End" />
+                <TreeTableColumn fx:id="table_job_col_name" editable="false" prefWidth="292.0" text="Description" />
+                <TreeTableColumn fx:id="table_job_col_type" editable="false" prefWidth="191.0" text="Type" />
+                  <TreeTableColumn fx:id="table_job_col_status" editable="false" minWidth="0.0" prefWidth="93.0" text="Status" />
+                  <TreeTableColumn fx:id="table_job_col_extref" editable="false" prefWidth="75.0" text="Ref" />
+                  <TreeTableColumn fx:id="table_job_col_progress" editable="false" prefWidth="121.0" text="Progress" />
+                  <TreeTableColumn fx:id="table_job_col_date_create" editable="false" prefWidth="75.0" text="Create" />
+                  <TreeTableColumn fx:id="table_job_col_date_start" editable="false" prefWidth="75.0" text="Start" />
+                  <TreeTableColumn fx:id="table_job_col_date_end" editable="false" prefWidth="75.0" text="End" />
               </columns>
             </TreeTableView>
-            <AnchorPane prefHeight="200.0" prefWidth="200.0">
-               <children>
-                  <Button fx:id="btnclose" layoutX="73.0" layoutY="39.0" mnemonicParsing="false" text="Button" />
-               </children>
-            </AnchorPane>
+            <TreeTableView fx:id="table_engine" prefHeight="200.0" prefWidth="200.0">
+              <columns>
+                <TreeTableColumn fx:id="table_engine_col_state" editable="false" prefWidth="75.0" text="State" />
+                <TreeTableColumn fx:id="table_engine_col_context_type" editable="false" prefWidth="269.14283752441406" text="Context Type" />
+                  <TreeTableColumn fx:id="table_engine_col_context_requirement_tags" editable="false" minWidth="8.5714111328125" prefWidth="239.42840576171875" text="Context Requirement Tags" />
+                  <TreeTableColumn fx:id="table_engine_col_ref" editable="false" prefWidth="94.857177734375" sortable="false" text="Ref" />
+                  <TreeTableColumn fx:id="table_engine_col_progress" editable="false" prefWidth="95.4285888671875" sortable="false" text="Progress" />
+                  <TreeTableColumn fx:id="table_engine_col_descr" editable="false" prefWidth="280.0001220703125" text="Description" />
+              </columns>
+            </TreeTableView>
          </items>
       </SplitPane>
    </center>
+   <bottom>
+      <AnchorPane prefHeight="81.0" prefWidth="1064.0" BorderPane.alignment="CENTER">
+         <children>
+            <Button fx:id="btnclose" layoutX="695.0" layoutY="27.0" mnemonicParsing="false" text="Close" />
+         </children>
+      </AnchorPane>
+   </bottom>
 </BorderPane>

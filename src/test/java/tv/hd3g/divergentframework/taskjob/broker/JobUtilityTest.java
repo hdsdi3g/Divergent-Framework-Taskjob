@@ -30,7 +30,7 @@ public class JobUtilityTest {
 	
 	public static Job createJob(String description, String context_type, JsonObject context_content, ArrayList<String> context_requirement_tags) {
 		Job j = new Job();
-		j.init(description, context_type, context_content, context_requirement_tags, null);
+		j.init(description, context_type, context_content, context_requirement_tags);
 		return j;
 	}
 	

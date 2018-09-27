@@ -18,6 +18,7 @@ package tv.hd3g.divergentframework.taskjob.worker;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -40,19 +41,23 @@ import tv.hd3g.divergentframework.taskjob.events.EngineEventObserver;
 public final class Engine {
 	private static final Logger log = LogManager.getLogger();
 	
+	private final UUID key;
 	private final LinkedBlockingQueue<WorkerThread> runnables;
 	private final String base_thread_name;
 	private final List<String> all_handled_context_types;
 	private final Function<String, Worker> createWorkerByContextType;
 	private final ArrayList<String> context_requirement_tags;
+	private final int max_worker_count;
 	
 	private EngineEventObserver observer;
 	
 	public Engine(int max_worker_count, String base_thread_name, List<String> all_handled_context_types, Function<String, Worker> createWorkerByContextType) {
+		key = UUID.randomUUID();
 		runnables = new LinkedBlockingQueue<>(max_worker_count);
 		if (max_worker_count == 0) {
 			throw new IndexOutOfBoundsException("\"max_worker_count\" can't to be 0");
 		}
+		this.max_worker_count = max_worker_count;
 		this.all_handled_context_types = all_handled_context_types;
 		if (all_handled_context_types == null) {
 			throw new NullPointerException("\"all_handled_context_types\" can't to be null");
@@ -153,6 +158,10 @@ public final class Engine {
 		return runnables.remainingCapacity();
 	}
 	
+	public int maxWorkersCount() {
+		return max_worker_count;
+	}
+	
 	private final AtomicInteger created_thread_count = new AtomicInteger(0);
 	
 	/**
@@ -184,7 +193,7 @@ public final class Engine {
 		
 		w_t.setAfterProcess(() -> {
 			if (observer != null) {
-				observer.onEngineEndsProcess(this, job);
+				observer.onEngineEndsProcess(this, w_t);
 			}
 			
 			log.trace("Remove item " + w_t + " from runnables list");
@@ -197,9 +206,37 @@ public final class Engine {
 		w_t.start();
 		
 		if (observer != null) {
-			observer.onEngineStartProcess(this, job);
+			observer.onEngineStartProcess(this, w_t);
 		}
 		
+		return true;
+	}
+	
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + (key == null ? 0 : key.hashCode());
+		return result;
+	}
+	
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		Engine other = (Engine) obj;
+		if (key == null) {
+			if (other.key != null) {
+				return false;
+			}
+		} else if (!key.equals(other.key)) {
+			return false;
+		}
 		return true;
 	}
 	

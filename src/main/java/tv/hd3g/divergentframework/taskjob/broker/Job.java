@@ -95,9 +95,7 @@ public final class Job {
 		return sb.toString();
 	}
 	
-	UUID init(String description, String context_type, JsonObject context_content, ArrayList<String> context_requirement_tags, JobEventObserver observer) {
-		this.observer = observer;
-		
+	UUID init(String description, String context_type, JsonObject context_content, ArrayList<String> context_requirement_tags) {
 		if (description == null) {
 			this.description = "";
 		} else {
@@ -122,11 +120,12 @@ public final class Job {
 		end_date = 0;
 		relatives_sub_jobs = new ArrayList<>();
 		
-		if (observer != null) {
-			observer.onJobAfterInit(this);
-		}
-		
 		return key;
+	}
+	
+	Job setObserver(JobEventObserver observer) {
+		this.observer = observer;
+		return this;
 	}
 	
 	/**
@@ -136,7 +135,7 @@ public final class Job {
 		this.external_reference = external_reference;
 		
 		if (observer != null) {
-			observer.onJobUpdate(this, JobUpdateSubject.EXTERNAL_REFERENCE);
+			observer.onJobUpdate(this, JobUpdateSubject.SET_EXTERNAL_REFERENCE);
 		}
 		
 		return this;
@@ -149,7 +148,7 @@ public final class Job {
 		this.linked_job = linked_job;
 		
 		if (observer != null) {
-			observer.onJobUpdate(this, JobUpdateSubject.LINKED_JOB);
+			observer.onJobUpdate(this, JobUpdateSubject.SET_LINKED_JOB);
 		}
 		
 		return this;
@@ -184,7 +183,7 @@ public final class Job {
 		this.context_requirement_tags = context_requirement_tags;
 		
 		if (observer != null) {
-			observer.onJobUpdate(this, JobUpdateSubject.CONTEXT_RQMNT_TAGS);
+			observer.onJobUpdate(this, JobUpdateSubject.SET_CONTEXT_REQUIREMENT_TAGS);
 		}
 		
 		return this;
@@ -212,7 +211,7 @@ public final class Job {
 	
 	Job addSubJob(String description, String context_type, JsonObject context_content, ArrayList<String> context_requirement_tags) {
 		Job sub_job = new Job();
-		UUID new_uuid = sub_job.setLinkedJob(key).init(description, context_type, context_content, context_requirement_tags, observer);
+		UUID new_uuid = sub_job.setLinkedJob(key).init(description, context_type, context_content, context_requirement_tags);
 		
 		synchronized (this) {
 			if (relatives_sub_jobs == null) {
@@ -222,10 +221,6 @@ public final class Job {
 		
 		synchronized (relatives_sub_jobs) {
 			relatives_sub_jobs.add(new_uuid);
-		}
-		
-		if (observer != null) {
-			observer.onJobAddSubJob(this, sub_job);
 		}
 		
 		return sub_job;
@@ -285,7 +280,7 @@ public final class Job {
 		}
 		
 		if (observer != null) {
-			observer.onJobUpdate(this, JobUpdateSubject.CONTEXT_CONTENT);
+			observer.onJobUpdate(this, JobUpdateSubject.SET_CONTEXT_CONTENT);
 		}
 		
 		return this;
@@ -353,6 +348,21 @@ public final class Job {
 	
 	public int getMaxProgressionValue() {
 		return max_progression_value;
+	}
+	
+	/**
+	 * @return default_value_if_not_progress, or "42" or "8/10"
+	 */
+	public String getProgression(String default_value_if_not_progress) {
+		if (max_progression_value > 0) {
+			return String.valueOf(actual_progression_value) + "/" + String.valueOf(max_progression_value);
+		} else {
+			if (actual_progression_value > 0) {
+				return String.valueOf(actual_progression_value);
+			} else {
+				return "";
+			}
+		}
 	}
 	
 	public long getCreateDate() {

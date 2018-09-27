@@ -18,7 +18,6 @@ package tv.hd3g.divergentframework.taskjob.gui;
 
 import java.util.List;
 import java.util.ResourceBundle;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.LogManager;
@@ -27,17 +26,12 @@ import org.apache.logging.log4j.Logger;
 import com.google.gson.JsonObject;
 
 import javafx.application.Application;
-import javafx.collections.FXCollections;
-import javafx.collections.MapChangeListener;
-import javafx.collections.ObservableList;
-import javafx.collections.ObservableMap;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.control.TreeItem;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import tv.hd3g.divergentframework.taskjob.InMemoryLocalTaskJob;
 import tv.hd3g.divergentframework.taskjob.broker.Job;
-import tv.hd3g.divergentframework.taskjob.worker.Engine;
+import tv.hd3g.divergentframework.taskjob.broker.TaskStatus;
 
 public class Gui extends Application {
 	private static Logger log = LogManager.getLogger();
@@ -53,37 +47,21 @@ public class Gui extends Application {
 		
 		controller = d.getController();
 		
-		ObservableList<Engine> engines = FXCollections.observableArrayList();
-		ObservableMap<UUID, Job> jobs = FXCollections.observableHashMap();
-		
-		task_jobs = new InMemoryLocalTaskJob(1000, 8, 8, 8, TimeUnit.SECONDS, jobs, engines);// XXX externalize this
+		task_jobs = new InMemoryLocalTaskJob(1000, 8, 8, 8, TimeUnit.SECONDS);// TODO3 externalize this
 		controller.startApp(primary_stage, root);
-		
-		final ObservableList<TreeItem<Job>> table_jobs_content = controller.getTableJobContent();
-		
-		jobs.addListener((MapChangeListener<? super UUID, ? super Job>) change -> {
-			if (change.wasAdded()) {
-				table_jobs_content.add(new TreeItem<Job>(change.getValueAdded()));
-			} else if (change.wasRemoved()) {
-				table_jobs_content.removeAll(table_jobs_content.filtered(ti_j -> ti_j.getValue().getKey().equals(change.getKey())));
-			} else {
-				throw new RuntimeException("What change ? " + change.getKey());
-			}
-		});
-		
-		/*controller.get ItemsList().addListener((ListChangeListener<? super TreeItem< >>) change -> {
-		// TODO same with engines
-		});*/
 		
 		new GuiEventDispatcher(controller, task_jobs);
 		
 		Thread t = new Thread(() -> {
-			task_jobs.createJob("Descr", "EXT", "context", new JsonObject(), List.of("RqT1", "RqT2"));
-			/*try {
+			try {
+				Job job1 = task_jobs.createJob("Descr", "EXT", "context", new JsonObject(), List.of("RqT1", "RqT2"));
 				Thread.sleep(1000);
+				task_jobs.createJob("Descr2", "EXT2", "context2", new JsonObject(), List.of("RqT1", "RqT2"));
+				Thread.sleep(1000);
+				task_jobs.switchStatus(job1, TaskStatus.POSTPONED);
+				
 			} catch (InterruptedException e) {
 			}
-			task_jobs.createJob("Descr2", "EXT2", "context2", new JsonObject(), List.of("RqT1", "RqT2"));*/
 		});
 		t.start();
 	}

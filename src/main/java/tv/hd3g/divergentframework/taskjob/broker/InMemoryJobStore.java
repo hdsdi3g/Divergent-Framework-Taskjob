@@ -51,14 +51,10 @@ class InMemoryJobStore {
 	private final HashSet<UUID> others_jobs;
 	
 	InMemoryJobStore() {
-		this(new HashMap<>());
-	}
-	
-	InMemoryJobStore(Map<UUID, Job> external_jobs_by_uuid) {
 		lock = new ReentrantLock();
 		lock_condition = lock.newCondition();
 		
-		jobs_by_uuid = external_jobs_by_uuid;
+		jobs_by_uuid = new HashMap<>();
 		waiting_jobs = new HashSet<>();
 		others_jobs = new HashSet<>();
 	}
@@ -256,16 +252,19 @@ class InMemoryJobStore {
 	
 	/**
 	 * @param stream_processor (full_job_list_stream_to_filter, job_by_uuid_resolver) -> filtered stream to remove
+	 * @return deleted jobs UUID
 	 */
-	void computeAllAndRemove(BiFunction<Stream<Job>, Function<UUID, Job>, Stream<Job>> stream_processor) {
-		syncWrite(() -> {
+	List<UUID> computeAllAndRemove(BiFunction<Stream<Job>, Function<UUID, Job>, Stream<Job>> stream_processor) {
+		return syncWrite(() -> {
 			Set<UUID> task_list = jobs_by_uuid.keySet();
 			
-			stream_processor.apply(task_list.stream().map(uuid -> {
+			List<Job> deleted_jobs = stream_processor.apply(task_list.stream().map(uuid -> {
 				return jobs_by_uuid.get(uuid);
 			}), uuid -> {
 				return jobs_by_uuid.get(uuid);
-			}).collect(Collectors.toList()).stream().forEach(job -> {
+			}).collect(Collectors.toList());
+			
+			deleted_jobs.forEach(job -> {
 				if (log.isTraceEnabled()) {
 					log.trace("Remove job " + job);
 				}
@@ -273,7 +272,7 @@ class InMemoryJobStore {
 				task_list.remove(job.getKey());
 			});
 			
-			return null;
+			return deleted_jobs.stream().map(job -> job.getKey()).collect(Collectors.toList());
 		});
 	}
 	

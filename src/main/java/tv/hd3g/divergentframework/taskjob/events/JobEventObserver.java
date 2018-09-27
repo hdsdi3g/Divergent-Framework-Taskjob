@@ -16,14 +16,12 @@
 */
 package tv.hd3g.divergentframework.taskjob.events;
 
+import java.util.List;
+import java.util.UUID;
+
 import tv.hd3g.divergentframework.taskjob.broker.Job;
 
 public interface JobEventObserver {
-	
-	/**
-	 * Can be triggered before the job has to be added to the current job list
-	 */
-	void onJobAfterInit(Job job);
 	
 	/**
 	 * Can be triggered just after onJobAfterInit, before the job has to be added to the current job list
@@ -32,9 +30,14 @@ public interface JobEventObserver {
 	
 	void onJobUpdateProgression(Job job);
 	
-	void onJobAddSubJob(Job job, Job sub_job);
-	
 	public enum JobUpdateSubject {
-		EXTERNAL_REFERENCE, LINKED_JOB, CONTEXT_RQMNT_TAGS, SWITCH_TO_ERROR, SWITCH_STATUS, CONTEXT_CONTENT;
+		SET_EXTERNAL_REFERENCE, SET_LINKED_JOB, SET_CONTEXT_REQUIREMENT_TAGS, SWITCH_TO_ERROR, SWITCH_STATUS, SET_CONTEXT_CONTENT;
 	}
+	
+	void brokerOnAfterFlush(List<UUID> deleted_jobs_uuid);
+	
+	void brokerOnCreateJob(Job job);
+	
+	void brokerOnCreateSubJob(Job reference, Job sub_job);
+	
 }

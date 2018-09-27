@@ -29,7 +29,7 @@ import tv.hd3g.divergentframework.taskjob.broker.TaskStatus;
 /**
  * Execute a Worker in a Thread
  */
-class WorkerThread extends Thread {
+public class WorkerThread extends Thread {
 	private static final Logger log = LogManager.getLogger();
 	
 	private final Job job;
@@ -130,4 +130,7 @@ class WorkerThread extends Thread {
 		}
 	}
 	
+	public Job getJob() {
+		return job;
+	}
 }

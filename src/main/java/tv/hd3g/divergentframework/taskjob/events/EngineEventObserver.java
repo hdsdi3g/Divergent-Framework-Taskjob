@@ -16,8 +16,8 @@
 */
 package tv.hd3g.divergentframework.taskjob.events;
 
-import tv.hd3g.divergentframework.taskjob.broker.Job;
 import tv.hd3g.divergentframework.taskjob.worker.Engine;
+import tv.hd3g.divergentframework.taskjob.worker.WorkerThread;
 
 public interface EngineEventObserver {
 	
@@ -25,8 +25,12 @@ public interface EngineEventObserver {
 	
 	void onEngineStop(Engine engine);
 	
-	void onEngineStartProcess(Engine engine, Job job);
+	void onEngineStartProcess(Engine engine, WorkerThread w_t);
 	
-	void onEngineEndsProcess(Engine engine, Job job);
+	void onEngineEndsProcess(Engine engine, WorkerThread w_t);
+	
+	void onRegisterEngine(Engine engine);
+	
+	void onUnRegisterEngine(Engine engine);
 	
 }

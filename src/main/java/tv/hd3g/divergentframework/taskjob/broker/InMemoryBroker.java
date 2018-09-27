@@ -19,10 +19,8 @@ package tv.hd3g.divergentframework.taskjob.broker;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -62,7 +60,7 @@ public class InMemoryBroker implements Broker {
 	
 	private JobEventObserver job_observer;
 	
-	public InMemoryBroker(int max_job_count, long abandoned_jobs_retention_time, long done_jobs_retention_time, long error_jobs_retention_time, TimeUnit unit, Map<UUID, Job> external_jobs_by_uuid) {
+	public InMemoryBroker(int max_job_count, long abandoned_jobs_retention_time, long done_jobs_retention_time, long error_jobs_retention_time, TimeUnit unit) {
 		this.max_job_count = max_job_count;
 		this.abandoned_jobs_retention_time = unit.toMillis(abandoned_jobs_retention_time);
 		this.done_jobs_retention_time = unit.toMillis(done_jobs_retention_time);
@@ -76,7 +74,7 @@ public class InMemoryBroker implements Broker {
 			t.setDaemon(true);
 			return t;
 		});
-		store = new InMemoryJobStore(external_jobs_by_uuid);
+		store = new InMemoryJobStore();
 		
 		long min_delay_to_update = Math.min(Math.min(abandoned_jobs_retention_time, done_jobs_retention_time), error_jobs_retention_time);
 		log.debug("Set regular flush task every " + min_delay_to_update + " " + unit.name().toLowerCase());
@@ -97,10 +95,6 @@ public class InMemoryBroker implements Broker {
 				});
 			}
 		}, min_delay_to_update, min_delay_to_update, unit);
-	}
-	
-	public InMemoryBroker(int max_job_count, long abandoned_jobs_retention_time, long done_jobs_retention_time, long error_jobs_retention_time, TimeUnit unit) {
-		this(max_job_count, abandoned_jobs_retention_time, done_jobs_retention_time, error_jobs_retention_time, unit, new HashMap<>());
 	}
 	
 	public Optional<RuntimeException> checkStoreConsistency() {
@@ -128,7 +122,7 @@ public class InMemoryBroker implements Broker {
 	 * @return this
 	 */
 	public InMemoryBroker flush() {
-		store.computeAllAndRemove((stream, uuid_resolver) -> {
+		List<UUID> deleted_jobs_uuid = store.computeAllAndRemove((stream, uuid_resolver) -> {
 			return stream.filter(job -> {
 				if (job.getStatus().isDone()) {
 					if (job.getStatus().equals(TaskStatus.DONE)) {
@@ -175,6 +169,10 @@ public class InMemoryBroker implements Broker {
 				return job.isTooOld(abandoned_jobs_retention_time);
 			});
 		});
+		
+		if (job_observer != null & deleted_jobs_uuid.isEmpty() == false) {
+			job_observer.brokerOnAfterFlush(deleted_jobs_uuid);
+		}
 		
 		return this;
 	}
@@ -241,7 +239,7 @@ public class InMemoryBroker implements Broker {
 		if (context_requirement_tags != null) {
 			l_context_requirement_tags = new ArrayList<>(context_requirement_tags);
 		}
-		job.init(description, context_type, context_content, l_context_requirement_tags, job_observer);
+		job.init(description, context_type, context_content, l_context_requirement_tags);
 		job.setExternalReference(external_reference);
 		
 		if (store.put(job) == false) {
@@ -253,6 +251,11 @@ public class InMemoryBroker implements Broker {
 		on_new_local_jobs_activity_callbacks.stream().forEach(r -> {
 			executor.execute(r);
 		});
+		
+		if (job_observer != null) {
+			job_observer.brokerOnCreateJob(job);
+		}
+		job.setObserver(job_observer);
 		
 		return job;
 	}
@@ -282,6 +285,11 @@ public class InMemoryBroker implements Broker {
 		on_new_local_jobs_activity_callbacks.stream().forEach(r -> {
 			executor.execute(r);
 		});
+		
+		if (job_observer != null) {
+			job_observer.brokerOnCreateSubJob(reference, sub_job);
+		}
+		sub_job.setObserver(job_observer);
 		
 		return sub_job;
 	}

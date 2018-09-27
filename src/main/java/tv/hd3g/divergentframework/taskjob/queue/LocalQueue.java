@@ -52,10 +52,6 @@ public class LocalQueue implements Queue {
 	private EngineEventObserver engine_observer;
 	
 	public LocalQueue(Broker broker) {
-		this(broker, new ArrayList<>());
-	}
-	
-	public LocalQueue(Broker broker, List<Engine> external_engine_list) {
 		this.broker = broker;
 		if (broker == null) {
 			throw new NullPointerException("\"broker\" can't to be null");
@@ -68,7 +64,7 @@ public class LocalQueue implements Queue {
 			return t;
 		});
 		
-		engines = external_engine_list;
+		engines = new ArrayList<>();
 		pending_stop = false;
 		
 		broker.registerCallbackOnNewLocalJobsActivity(() -> {
@@ -108,6 +104,10 @@ public class LocalQueue implements Queue {
 				return;
 			}
 			engines.add(engine);
+			
+			if (engine_observer != null) {
+				engine_observer.onRegisterEngine(engine);
+			}
 		}
 		
 		engine.setObserver(engine_observer);
@@ -118,6 +118,10 @@ public class LocalQueue implements Queue {
 	public void unRegisterEngine(Engine engine) {
 		synchronized (engines) {
 			engines.remove(engine);
+			
+			if (engine_observer != null) {
+				engine_observer.onUnRegisterEngine(engine);
+			}
 		}
 	}
 	
