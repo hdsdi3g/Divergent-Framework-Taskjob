@@ -37,7 +37,7 @@ public class Gui extends Application {
 	private static Logger log = LogManager.getLogger();
 	
 	private GuiController controller;
-	private InMemoryLocalTaskJob task_jobs;
+	private InMemoryLocalTaskJob task_job;
 	
 	public void start(Stage primary_stage) throws Exception {
 		log.info("Start JavaFX GUI Interface");
@@ -47,23 +47,36 @@ public class Gui extends Application {
 		
 		controller = d.getController();
 		
-		task_jobs = new InMemoryLocalTaskJob(1000, 8, 8, 8, TimeUnit.SECONDS);// TODO3 externalize this
-		controller.startApp(primary_stage, root);
-		
-		new GuiEventDispatcher(controller, task_jobs);
-		
-		Thread t = new Thread(() -> {
+		task_job = new InMemoryLocalTaskJob(1000, 8, 8, 8, TimeUnit.SECONDS);// TODO3 externalize this
+		controller.startApp(primary_stage, root, () -> {
 			try {
-				Job job1 = task_jobs.createJob("Descr", "EXT", "context", new JsonObject(), List.of("RqT1", "RqT2"));
+				task_job.prepareToStop(r -> r.run()).get();
+			} catch (Exception e) {
+				log.error("Can't stop task_jobs", e);
+			}
+			System.exit(0);
+		});
+		
+		controller.linkToTaskJob(task_job);
+		
+		Thread t_demo = new Thread(() -> {
+			try {
+				Job job1 = task_job.createJob("Descr", "EXT", "context", new JsonObject(), List.of("RqT1", "RqT2"));// TODO2 display context content json
+				Job job1_sub = task_job.addSubJob(job1, "Sub job 1", "ref2", "ctx2", new JsonObject(), List.of("RqT3", "RqT4"));
+				
+				Thread.sleep(2000);
+				task_job.createJob("Descr2", "EXT2", "context2", new JsonObject(), List.of("RqT1", "RqT2"));
+				task_job.switchStatus(job1_sub, TaskStatus.CANCELED);
+				task_job.addSubJob(job1_sub, "Sub job 2", "ref2", "ctx2", new JsonObject(), List.of("RqT5", "RqT6"));
+				
 				Thread.sleep(1000);
-				task_jobs.createJob("Descr2", "EXT2", "context2", new JsonObject(), List.of("RqT1", "RqT2"));
-				Thread.sleep(1000);
-				task_jobs.switchStatus(job1, TaskStatus.POSTPONED);
+				task_job.switchStatus(job1, TaskStatus.POSTPONED);
+				task_job.switchStatus(job1_sub, TaskStatus.POSTPONED);
 				
 			} catch (InterruptedException e) {
 			}
 		});
-		t.start();
+		t_demo.start();
 	}
 	
 	public static void main(String[] args) {
