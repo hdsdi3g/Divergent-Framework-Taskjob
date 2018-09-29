@@ -69,18 +69,20 @@ public class InMemoryLocalTaskJob extends InMemoryBroker implements Queue {
 		queue.unRegisterEngine(engine);
 	}
 	
-	public <T> void registerGenericEngine(int max_worker_count, String base_thread_name, Gson gson, Class<T> context_class, Supplier<GenericWorker<T>> createWorker) {
+	public <T> Engine registerGenericEngine(int max_worker_count, String base_thread_name, Gson gson, Class<T> context_class, Supplier<GenericWorker<T>> createWorker) {
 		GenericEngine<T> g_e = new GenericEngine<>(max_worker_count, base_thread_name, gson, context_class, createWorker);
 		
 		log.info("Register " + g_e.getEngine());
 		queue.registerEngine(g_e.getEngine());
+		
+		return g_e.getEngine();
 	}
 	
 	public <T> void unRegisterGenericEngine(Class<?> context_class) {
 		log.info("Unregister " + context_class.getName());
 		
 		queue.getEnginesByContextType(Job.JAVA_CLASS_PREFIX_CONTEXT_TYPE + context_class.getName()).stream().distinct().forEach(engine -> {
-			queue.registerEngine(engine);
+			queue.unRegisterEngine(engine);
 		});
 	}
 	

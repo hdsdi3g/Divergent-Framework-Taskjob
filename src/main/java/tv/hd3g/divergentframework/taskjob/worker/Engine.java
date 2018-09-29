@@ -80,8 +80,7 @@ public final class Engine {
 	}
 	
 	public String toString() {
-		int current = runnables.size() - runnables.remainingCapacity();
-		return "Engine \"" + base_thread_name + "\" " + current + "/" + runnables.size() + " for " + all_handled_context_types;
+		return "Engine \"" + base_thread_name + "\" (Wkrs " + runnables.size() + "/" + max_worker_count + ") for " + all_handled_context_types.size() + " context(s)";
 	}
 	
 	/**
