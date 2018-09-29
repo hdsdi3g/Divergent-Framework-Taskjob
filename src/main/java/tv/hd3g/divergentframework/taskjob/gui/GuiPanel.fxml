@@ -26,7 +26,7 @@
             </TreeTableView>
             <TreeTableView fx:id="table_engine" prefHeight="200.0" prefWidth="200.0">
               <columns>
-                <TreeTableColumn fx:id="table_engine_col_state" editable="false" prefWidth="75.0" text="State" />
+                <TreeTableColumn fx:id="table_engine_col_state" editable="false" prefWidth="75.0" text="Workers" />
                 <TreeTableColumn fx:id="table_engine_col_context_type" editable="false" prefWidth="269.14283752441406" text="Context Type" />
                   <TreeTableColumn fx:id="table_engine_col_context_requirement_tags" editable="false" minWidth="8.5714111328125" prefWidth="239.42840576171875" text="Context Requirement Tags" />
                   <TreeTableColumn fx:id="table_engine_col_ref" editable="false" prefWidth="94.857177734375" sortable="false" text="Ref" />
