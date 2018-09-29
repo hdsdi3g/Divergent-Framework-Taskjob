@@ -51,6 +51,9 @@ public final class Engine {
 	
 	private EngineEventObserver observer;
 	
+	/**
+	 * @param createWorkerByContextType context_type -> Worker ; Worker: ctx_type -> return (job, broker, shouldStopProcessing)
+	 */
 	public Engine(int max_worker_count, String base_thread_name, List<String> all_handled_context_types, Function<String, Worker> createWorkerByContextType) {
 		key = UUID.randomUUID();
 		runnables = new LinkedBlockingQueue<>(max_worker_count);

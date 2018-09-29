@@ -32,6 +32,7 @@ import javafx.stage.Stage;
 import tv.hd3g.divergentframework.taskjob.InMemoryLocalTaskJob;
 import tv.hd3g.divergentframework.taskjob.broker.Job;
 import tv.hd3g.divergentframework.taskjob.broker.TaskStatus;
+import tv.hd3g.divergentframework.taskjob.worker.Engine;
 
 public class Gui extends Application {
 	private static Logger log = LogManager.getLogger();
@@ -72,11 +73,36 @@ public class Gui extends Application {
 				Thread.sleep(1000);
 				task_job.switchStatus(job1, TaskStatus.POSTPONED);
 				task_job.switchStatus(job1_sub, TaskStatus.POSTPONED);
-				
 			} catch (InterruptedException e) {
 			}
 		});
 		t_demo.start();
+		
+		Thread t_demo2 = new Thread(() -> {
+			
+			Engine engine = new Engine(4, "TstEng", List.of("type1", "type2"), ctx_type -> {
+				return (job, broker, shouldStopProcessing) -> {
+					/**
+					 * Do nothing, just a test.
+					 */
+				};
+			});
+			task_job.registerEngine(engine);
+			
+			engine.setContextRequirementTags(List.of("RQ1", "RQ2"));
+		});
+		t_demo2.start();
+		
+		// TODO, Action global: task_job.checkStoreConsistency();
+		// TODO, Action global: task_job.flush();
+		// TODO, Action global: task_job.prepareToStop(executor)
+		// TODO, Action global: stop all actual engines (to do...) and destroy all engines.
+		// TODO, Action for selected job: task_job.switchStatus(job, new_status);
+		// TODO, Action for selected engine: task_job.unRegisterEngine(engine);
+		// TODO, Action for selected engine: engine.stopCurrentAll(executor)
+		// TODO, Action for selected worker_thread: worker.waitToStop(Executor executor)
+		// TODO, Display for selected job: job1.getContextContent();
+		
 	}
 	
 	public static void main(String[] args) {

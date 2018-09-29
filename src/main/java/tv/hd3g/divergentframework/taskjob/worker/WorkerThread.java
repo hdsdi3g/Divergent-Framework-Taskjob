@@ -109,7 +109,7 @@ public class WorkerThread extends Thread {
 		want_to_stop = true;
 	}
 	
-	CompletableFuture<Void> waitToStop(Executor executor) {
+	public CompletableFuture<Void> waitToStop(Executor executor) {
 		want_to_stop = true;
 		
 		return CompletableFuture.runAsync(() -> {

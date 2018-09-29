@@ -42,6 +42,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import tv.hd3g.divergentframework.taskjob.InMemoryLocalTaskJob;
 import tv.hd3g.divergentframework.taskjob.broker.Job;
+import tv.hd3g.divergentframework.taskjob.broker.TaskStatus;
 import tv.hd3g.divergentframework.taskjob.events.EngineEventObserver;
 import tv.hd3g.divergentframework.taskjob.events.JobEventObserver;
 import tv.hd3g.divergentframework.taskjob.worker.Engine;
@@ -94,7 +95,16 @@ public class GuiController {
 			}
 		});
 		table_job_col_status.setCellValueFactory(p -> {
-			return new ReadOnlyStringWrapper(p.getValue().getValue().getStatus().name());
+			Job job = p.getValue().getValue();
+			TaskStatus current_status = job.getStatus();
+			if (TaskStatus.ERROR.equals(current_status)) {
+				if (job.getLastErrorMessage() != null) {
+					if (job.getLastErrorMessage().isEmpty() == false) {
+						return new ReadOnlyStringWrapper(current_status.name() + ": " + job.getLastErrorMessage());
+					}
+				}
+			}
+			return new ReadOnlyStringWrapper(job.getStatus().name());
 		});
 		table_job_col_progress.setCellValueFactory(p -> {
 			return new ReadOnlyStringWrapper(p.getValue().getValue().getProgression(""));
@@ -214,7 +224,7 @@ public class GuiController {
 		String descr = "";
 		
 		void updateEngineOnly() {
-			state = String.valueOf(engine.actualFreeWorkers()) + "/" + String.valueOf(engine.maxWorkersCount());
+			state = String.valueOf(engine.maxWorkersCount() - engine.actualFreeWorkers()) + "/" + String.valueOf(engine.maxWorkersCount());
 			context_type = engine.getAllHandledContextTypes().stream().collect(Collectors.joining(", "));
 			context_requirement_tags = engine.getContextRequirementTags().stream().collect(Collectors.joining(", "));
 		}
