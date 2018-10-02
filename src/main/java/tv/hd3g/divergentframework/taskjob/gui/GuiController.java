@@ -16,6 +16,8 @@
 */
 package tv.hd3g.divergentframework.taskjob.gui;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -37,7 +39,9 @@ import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableColumn;
@@ -64,10 +68,7 @@ public class GuiController {
 	
 	private final static SimpleDateFormat date_format = new SimpleDateFormat("HH:mm:ss");
 	
-	void startApp(Stage stage, BorderPane root, Runnable onUserQuit) {
-		// this.stage = stage;
-		// this.root = root;
-		
+	void startApp(Stage stage, BorderPane root, InMemoryLocalTaskJob task_job, Runnable onUserQuit) {
 		Scene scene = new Scene(root);
 		scene.getStylesheets().add(getClass().getResource("GuiPanel.css").toExternalForm());
 		// stage.getIcons().add(new Image(getClass().getResourceAsStream("tasks.png")));
@@ -83,13 +84,54 @@ public class GuiController {
 		
 		btnclose.setOnAction(event -> {
 			event.consume();
+			log.debug("Want to close");
 			stage.close();
 			onUserQuit.run();
 		});
-		
 		btnflush.setOnAction(event -> {
 			event.consume();
-			// XXX Do flush
+			log.debug("Start manually flush");
+			task_job.flush();
+		});
+		btnchkconsistency.setOnAction(event -> {
+			event.consume();
+			log.debug("Check manually store consistency");
+			task_job.checkStoreConsistency().ifPresentOrElse(e -> {
+				/**
+				 * On error
+				 */
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				
+				Alert alert = new Alert(Alert.AlertType.ERROR);
+				alert.setTitle("Store consistency selftest");
+				alert.setHeaderText("Store consistency is not ok");
+				
+				TextArea ta = new TextArea(sw.toString());
+				ta.setEditable(false);
+				ScrollPane sp = new ScrollPane(ta);
+				sp.setFitToHeight(true);
+				sp.setFitToWidth(true);
+				
+				alert.getDialogPane().setExpandableContent(sp);
+				
+				/*
+				java.lang.IllegalStateException: Invalid lists sizes, jobs_by_uuid: 3, waiting_jobs: 1, others_jobs: 3
+				at tv.hd3g.divergentframework.taskjob.broker.InMemoryJobStore.lambda$13(InMemoryJobStore.java:211)
+				at tv.hd3g.divergentframework.taskjob.broker.InMemoryJobStore.syncRead(InMemoryJobStore.java:70)
+				at tv.hd3g.divergentframework.taskjob.broker.InMemoryJobStore.checkConsistency(InMemoryJobStore.java:209)
+				at tv.hd3g.divergentframework.taskjob.broker.InMemoryBroker.checkStoreConsistency(InMemoryBroker.java:101)
+				 * */
+				alert.showAndWait();
+			}, () -> {
+				/**
+				 * On ok
+				 */
+				Alert alert = new Alert(Alert.AlertType.INFORMATION);
+				alert.setTitle("Store consistency selftest");
+				alert.setHeaderText("Store consistency is ok");
+				alert.showAndWait();
+			});
 		});
 		
 		table_job_col_name.setCellValueFactory(p -> {
@@ -210,6 +252,8 @@ public class GuiController {
 	private Button btnclose;
 	@FXML
 	private Button btnflush;
+	@FXML
+	private Button btnchkconsistency;
 	
 	@FXML
 	private TreeTableView<Job> table_job;

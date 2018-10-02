@@ -124,7 +124,12 @@ public class InMemoryBroker implements Broker {
 	public InMemoryBroker flush() {
 		List<UUID> deleted_jobs_uuid = store.computeAllAndRemove((stream, uuid_resolver) -> {
 			return stream.filter(job -> {
-				if (job.getStatus().isDone()) {
+				if (job.getStatus().equals(TaskStatus.PROCESSING)) {
+					/**
+					 * Processing tasks will never expire.
+					 */
+					return false;
+				} else if (job.getStatus().isDone()) {
 					if (job.getStatus().equals(TaskStatus.DONE)) {
 						/**
 						 * Search all dependant linked job.
@@ -149,7 +154,7 @@ public class InMemoryBroker implements Broker {
 					}
 				} else if (job.getStatus().equals(TaskStatus.POSTPONED)) {
 					/**
-					 * Postponed task will not expire.
+					 * Postponed tasks will never expire.
 					 */
 					return false;
 				} else if (job.getStatus().equals(TaskStatus.WAITING)) {

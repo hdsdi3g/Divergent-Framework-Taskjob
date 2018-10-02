@@ -49,8 +49,6 @@ public class InMemoryLocalTaskJob extends InMemoryBroker implements Queue {
 		queue = new LocalQueue(this);
 	}
 	
-	// TODO2 export checkStoreConsistency() to a callback system
-	
 	/**
 	 * @return this
 	 */

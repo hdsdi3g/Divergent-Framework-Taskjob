@@ -52,7 +52,7 @@ public class Gui extends Application {
 		controller = d.getController();
 		
 		task_job = new InMemoryLocalTaskJob(1000, 8, 8, 8, TimeUnit.SECONDS);// TODO3 externalize this
-		controller.startApp(primary_stage, root, () -> {
+		controller.startApp(primary_stage, root, task_job, () -> {
 			try {
 				task_job.prepareToStop(r -> r.run()).get();
 			} catch (Exception e) {
@@ -65,7 +65,7 @@ public class Gui extends Application {
 		
 		Thread t_demo = new Thread(() -> {
 			try {
-				Job job1 = task_job.createJob("Descr", "EXT", "context", new JsonObject(), List.of("RqT1", "RqT2"));// TODO2 display context content json
+				Job job1 = task_job.createJob("Descr", "EXT", "context", new JsonObject(), List.of("RqT1", "RqT2"));
 				Job job1_sub = task_job.addSubJob(job1, "Sub job 1", "ref2", "ctx2", new JsonObject(), List.of("RqT3", "RqT4"));
 				
 				Thread.sleep(500);
@@ -117,7 +117,7 @@ public class Gui extends Application {
 						} catch (InterruptedException e) {
 						}
 					});
-					log.info("END JOB");// FIXME flush before ends
+					log.info("END JOB");
 				};
 			});
 			task_job.registerEngine(engine2);

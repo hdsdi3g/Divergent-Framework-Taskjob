@@ -207,7 +207,7 @@ class InMemoryJobStore {
 	
 	Optional<RuntimeException> checkConsistency() {
 		return syncRead(() -> {
-			if (jobs_by_uuid.size() != waiting_jobs.size() + others_jobs.size()) {
+			if (jobs_by_uuid.size() != waiting_jobs.size() + others_jobs.size()) {// FIXME
 				return Optional.of(new IllegalStateException("Invalid lists sizes, jobs_by_uuid: " + jobs_by_uuid.size() + ", waiting_jobs: " + waiting_jobs.size() + ", others_jobs: " + others_jobs.size()));
 			}
 			
