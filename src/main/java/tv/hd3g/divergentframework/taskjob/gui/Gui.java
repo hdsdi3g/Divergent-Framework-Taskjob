@@ -19,10 +19,13 @@ package tv.hd3g.divergentframework.taskjob.gui;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
 import javafx.application.Application;
@@ -65,12 +68,23 @@ public class Gui extends Application {
 				Job job1 = task_job.createJob("Descr", "EXT", "context", new JsonObject(), List.of("RqT1", "RqT2"));// TODO2 display context content json
 				Job job1_sub = task_job.addSubJob(job1, "Sub job 1", "ref2", "ctx2", new JsonObject(), List.of("RqT3", "RqT4"));
 				
-				Thread.sleep(2000);
+				Thread.sleep(500);
+				JsonObject jp_sj2 = new JsonObject();
+				jp_sj2.addProperty("boolean", true);
+				jp_sj2.add("nulle", JsonNull.INSTANCE);
+				jp_sj2.addProperty("integer", 42);
+				jp_sj2.addProperty("floated", 4.2);
+				JsonArray ja = new JsonArray();
+				ja.add("one");
+				ja.add("two");
+				ja.add("tree");
+				jp_sj2.add("ja", ja);
+				
 				task_job.createJob("Descr2", "EXT2", "context2", new JsonObject(), List.of("RqT1", "RqT2"));
 				task_job.switchStatus(job1_sub, TaskStatus.CANCELED);
-				task_job.addSubJob(job1_sub, "Sub job 2", "ref2", "ctx2", new JsonObject(), List.of("RqT5", "RqT6"));
+				task_job.addSubJob(job1_sub, "Sub job 2", "ref2", "ctx2", jp_sj2, List.of("RqT5", "RqT6"));
 				
-				Thread.sleep(1000);
+				Thread.sleep(500);
 				task_job.switchStatus(job1, TaskStatus.POSTPONED);
 				task_job.switchStatus(job1_sub, TaskStatus.POSTPONED);
 			} catch (InterruptedException e) {
@@ -88,21 +102,38 @@ public class Gui extends Application {
 				};
 			});
 			task_job.registerEngine(engine);
-			
 			engine.setContextRequirementTags(List.of("RQ1", "RQ2"));
+			
+			Engine engine2 = new Engine(1, "TstEng2", List.of("context2"), ctx_type -> {
+				return (job, broker, shouldStopProcessing) -> {
+					/**
+					 * Simulate an exec
+					 */
+					log.info("START JOB");
+					IntStream.range(0, 10_000).forEach(i -> {
+						broker.updateProgression(job, i, 10_000);
+						try {
+							Thread.sleep(1);
+						} catch (InterruptedException e) {
+						}
+					});
+					log.info("END JOB");// FIXME flush before ends
+				};
+			});
+			task_job.registerEngine(engine2);
+			engine2.setContextRequirementTags(List.of("RqT1", "RqT2"));
 		});
 		t_demo2.start();
 		
 		// TODO, Action global: task_job.checkStoreConsistency();
-		// TODO, Action global: task_job.flush();
 		// TODO, Action global: task_job.prepareToStop(executor)
 		// TODO, Action global: stop all actual engines (to do...) and destroy all engines.
 		// TODO, Action for selected job: task_job.switchStatus(job, new_status);
 		// TODO, Action for selected engine: task_job.unRegisterEngine(engine);
 		// TODO, Action for selected engine: engine.stopCurrentAll(executor)
 		// TODO, Action for selected worker_thread: worker.waitToStop(Executor executor)
-		// TODO, Display for selected job: job1.getContextContent();
 		
+		// TODO3 create Job log ? with a specific and contextual logger ?
 	}
 	
 	public static void main(String[] args) {

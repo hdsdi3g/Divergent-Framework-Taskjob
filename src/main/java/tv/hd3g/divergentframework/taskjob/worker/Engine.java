@@ -242,4 +242,8 @@ public final class Engine {
 		return true;
 	}
 	
+	public UUID getKey() {
+		return key;
+	}
+	
 }

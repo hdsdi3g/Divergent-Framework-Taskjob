@@ -1,47 +1,74 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TreeTableColumn?>
 <?import javafx.scene.control.TreeTableView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.text.Font?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="454.0" prefWidth="1087.0" xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="tv.hd3g.divergentframework.taskjob.gui.GuiController">
-   <center>
-      <SplitPane dividerPositions="0.5" orientation="VERTICAL" prefHeight="200.0" prefWidth="160.0" BorderPane.alignment="CENTER">
-         <items>
-            <TreeTableView fx:id="table_job" prefHeight="200.0" prefWidth="200.0" showRoot="false">
-              <columns>
-                <TreeTableColumn fx:id="table_job_col_name" editable="false" prefWidth="292.0" text="Description" />
-                <TreeTableColumn fx:id="table_job_col_type" editable="false" prefWidth="181.71429443359375" text="Type" />
-                  <TreeTableColumn fx:id="table_job_col_status" editable="false" minWidth="0.0" prefWidth="102.85711669921875" text="Status" />
-                  <TreeTableColumn fx:id="table_job_col_extref" editable="false" prefWidth="75.0" text="Ref" />
-                  <TreeTableColumn fx:id="table_job_col_progress" editable="false" prefWidth="121.0" text="Progress" />
-                  <TreeTableColumn fx:id="table_job_col_date_create" editable="false" prefWidth="75.0" text="Create" />
-                  <TreeTableColumn fx:id="table_job_col_date_start" editable="false" prefWidth="75.0" text="Start" />
-                  <TreeTableColumn fx:id="table_job_col_date_end" editable="false" prefWidth="75.0" text="End" />
-                  <TreeTableColumn fx:id="table_job_col_date_key" editable="false" prefWidth="75.0" sortable="false" text="Job key" />
-              </columns>
-            </TreeTableView>
-            <TreeTableView fx:id="table_engine" prefHeight="200.0" prefWidth="200.0">
-              <columns>
-                <TreeTableColumn fx:id="table_engine_col_state" editable="false" prefWidth="75.0" text="Workers" />
-                <TreeTableColumn fx:id="table_engine_col_context_type" editable="false" prefWidth="269.14283752441406" text="Context Type" />
-                  <TreeTableColumn fx:id="table_engine_col_context_requirement_tags" editable="false" minWidth="8.5714111328125" prefWidth="239.42840576171875" text="Context Requirement Tags" />
-                  <TreeTableColumn fx:id="table_engine_col_ref" editable="false" prefWidth="94.857177734375" sortable="false" text="Ref" />
-                  <TreeTableColumn fx:id="table_engine_col_descr" editable="false" prefWidth="280.0001220703125" text="Description" />
-                  <TreeTableColumn fx:id="table_engine_col_job_key" editable="false" prefWidth="95.4285888671875" sortable="false" text="Job key" />
-              </columns>
-            </TreeTableView>
-         </items>
-      </SplitPane>
-   </center>
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="454.0" prefWidth="1308.0" xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="tv.hd3g.divergentframework.taskjob.gui.GuiController">
    <bottom>
       <AnchorPane prefHeight="81.0" prefWidth="1064.0" BorderPane.alignment="CENTER">
          <children>
-            <Button fx:id="btnclose" layoutX="1004.0" layoutY="28.0" mnemonicParsing="false" text="Close" />
+            <Button fx:id="btnclose" layoutX="1249.0" layoutY="28.0" mnemonicParsing="false" text="Close" />
+            <Button layoutX="1193.0" layoutY="28.0" mnemonicParsing="false" text="Flush" />
          </children>
       </AnchorPane>
    </bottom>
+   <center>
+      <SplitPane dividerPositions="0.8277182235834609" prefHeight="160.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+         <items>
+            <SplitPane dividerPositions="0.5" orientation="VERTICAL" prefHeight="200.0" prefWidth="160.0">
+               <items>
+                  <TreeTableView fx:id="table_job" prefHeight="200.0" prefWidth="200.0" showRoot="false">
+                    <columns>
+                      <TreeTableColumn fx:id="table_job_col_name" editable="false" prefWidth="292.0" text="Description" />
+                      <TreeTableColumn fx:id="table_job_col_type" editable="false" prefWidth="181.71429443359375" text="Type" />
+                        <TreeTableColumn fx:id="table_job_col_status" editable="false" minWidth="0.0" prefWidth="102.85711669921875" text="Status" />
+                        <TreeTableColumn fx:id="table_job_col_extref" editable="false" prefWidth="75.0" text="Ref" />
+                        <TreeTableColumn fx:id="table_job_col_progress" editable="false" prefWidth="121.0" text="Progress" />
+                        <TreeTableColumn fx:id="table_job_col_date_create" editable="false" prefWidth="75.0" text="Create" />
+                        <TreeTableColumn fx:id="table_job_col_date_start" editable="false" prefWidth="75.0" text="Start" />
+                        <TreeTableColumn fx:id="table_job_col_date_end" editable="false" prefWidth="75.0" text="End" />
+                        <TreeTableColumn fx:id="table_job_col_date_key" editable="false" prefWidth="75.0" sortable="false" text="Job key" />
+                    </columns>
+                  </TreeTableView>
+                  <TreeTableView fx:id="table_engine" prefHeight="200.0" prefWidth="200.0">
+                    <columns>
+                      <TreeTableColumn fx:id="table_engine_col_state" editable="false" prefWidth="75.0" text="Workers" />
+                      <TreeTableColumn fx:id="table_engine_col_context_type" editable="false" prefWidth="269.14283752441406" text="Context Type" />
+                        <TreeTableColumn fx:id="table_engine_col_context_requirement_tags" editable="false" minWidth="8.5714111328125" prefWidth="239.42840576171875" text="Context Requirement Tags" />
+                        <TreeTableColumn fx:id="table_engine_col_ref" editable="false" prefWidth="94.857177734375" sortable="false" text="Ref" />
+                        <TreeTableColumn fx:id="table_engine_col_descr" editable="false" prefWidth="280.0001220703125" text="Description" />
+                        <TreeTableColumn fx:id="table_engine_col_job_key" editable="false" prefWidth="95.4285888671875" sortable="false" text="Job key" />
+                    </columns>
+                  </TreeTableView>
+               </items>
+            </SplitPane>
+            <TabPane prefHeight="200.0" prefWidth="200.0" tabClosingPolicy="UNAVAILABLE">
+              <tabs>
+                <Tab text="Job context">
+                     <content>
+                        <ScrollPane fitToHeight="true" fitToWidth="true">
+                           <content>
+                              <TextArea fx:id="textarea_job_context" editable="false">
+                                 <font>
+                                    <Font name="Monospaced Regular" size="12.0" />
+                                 </font>
+                              </TextArea>
+                           </content>
+                        </ScrollPane>
+                     </content>
+                  </Tab>
+              </tabs>
+            </TabPane>
+         </items>
+      </SplitPane>
+   </center>
 </BorderPane>

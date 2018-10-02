@@ -23,11 +23,14 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyStringWrapper;
@@ -35,6 +38,7 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
@@ -81,6 +85,11 @@ public class GuiController {
 			event.consume();
 			stage.close();
 			onUserQuit.run();
+		});
+		
+		btnflush.setOnAction(event -> {
+			event.consume();
+			// XXX Do flush
 		});
 		
 		table_job_col_name.setCellValueFactory(p -> {
@@ -143,6 +152,26 @@ public class GuiController {
 		table_job.setShowRoot(false);
 		table_job.setRoot(new TreeItem<>());
 		
+		GsonBuilder g_b = new GsonBuilder();
+		g_b.setPrettyPrinting();
+		g_b.disableHtmlEscaping();
+		g_b.serializeNulls();
+		final Gson gson = g_b.create();
+		
+		/**
+		 * On table_job selection change, update textarea_job_context with the job selected value, or clean it.
+		 */
+		table_job.getSelectionModel().selectedItemProperty().addListener((observable_value, old_value, new_value) -> {
+			if (new_value != null) {
+				JsonObject jo_context = new_value.getValue().getContextContent();
+				if (jo_context != null) {
+					textarea_job_context.setText(gson.toJson(jo_context));
+					return;
+				}
+			}
+			textarea_job_context.clear();
+		});
+		
 		table_engine_col_state.setCellValueFactory(p -> {
 			return new ReadOnlyStringWrapper(p.getValue().getValue().state);
 		});
@@ -166,6 +195,11 @@ public class GuiController {
 		table_engine.setRoot(new TreeItem<>());
 	}
 	
+	public GuiController linkToTaskJob(InMemoryLocalTaskJob task_job) {
+		event_dispatcher = new EventDispatcher(task_job);
+		return this;
+	}
+	
 	/*
 	 **********************
 	 * JAVAFX CONTROLS ZONE
@@ -174,6 +208,8 @@ public class GuiController {
 	
 	@FXML
 	private Button btnclose;
+	@FXML
+	private Button btnflush;
 	
 	@FXML
 	private TreeTableView<Job> table_job;
@@ -211,37 +247,8 @@ public class GuiController {
 	@FXML
 	private TreeTableColumn<TableItemEngineWorker, String> table_engine_col_descr;
 	
-	static final class TableItemEngineWorker {
-		
-		Engine engine;
-		WorkerThread worker;
-		
-		String state = "";
-		String context_type = "";
-		String context_requirement_tags = "";
-		String ref = "";
-		String job_key = "";
-		String descr = "";
-		
-		void updateEngineOnly() {
-			state = String.valueOf(engine.maxWorkersCount() - engine.actualFreeWorkers()) + "/" + String.valueOf(engine.maxWorkersCount());
-			context_type = engine.getAllHandledContextTypes().stream().collect(Collectors.joining(", "));
-			context_requirement_tags = engine.getContextRequirementTags().stream().collect(Collectors.joining(", "));
-		}
-		
-		void updateWorkerOnly() {
-			context_type = worker.getJob().getContextType();
-			context_requirement_tags = worker.getJob().getContextRequirementTags().stream().collect(Collectors.joining(", "));
-			ref = worker.getJob().getKey().toString();
-			job_key = worker.getJob().getKey().toString();
-			descr = worker.getJob().getDescription();
-		}
-	}
-	
-	public GuiController linkToTaskJob(InMemoryLocalTaskJob task_job) {
-		event_dispatcher = new EventDispatcher(task_job);
-		return this;
-	}
+	@FXML
+	private TextArea textarea_job_context;
 	
 	private class EventDispatcher implements EngineEventObserver, JobEventObserver {
 		private final ExecutorService executor;
@@ -335,7 +342,7 @@ public class GuiController {
 			exec(() -> {
 				TreeItem<Job> item = getTreeItemByJob(job);
 				if (item == null) {
-					log.error("Can't found job in current job table" + job);
+					log.trace("Can't found job in current job table, maybe it was purged before this update was triggered", () -> job);
 					return;
 				}
 				item.setValue(null);
@@ -350,7 +357,7 @@ public class GuiController {
 			exec(() -> {
 				TreeItem<Job> item = getTreeItemByJob(job);
 				if (item == null) {
-					log.error("Can't found job in current job table" + job);
+					log.trace("Can't found job in current job table, maybe it was purged before this update was triggered", () -> job);
 					return;
 				}
 				item.setValue(null);

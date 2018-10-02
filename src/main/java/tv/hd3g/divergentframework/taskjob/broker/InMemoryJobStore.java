@@ -144,6 +144,7 @@ class InMemoryJobStore {
 	
 	/**
 	 * @param target supplier call is in internal lock
+	 * @return false if job was deleted
 	 */
 	boolean update(Supplier<UUID> target) {
 		return syncWrite(() -> {
