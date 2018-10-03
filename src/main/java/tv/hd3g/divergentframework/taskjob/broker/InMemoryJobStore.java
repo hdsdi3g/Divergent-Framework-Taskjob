@@ -75,7 +75,7 @@ class InMemoryJobStore {
 		}
 	}
 	
-	private HashSet<UUID> getListByTaskStatus(TaskStatus status) {
+	private HashSet<UUID> getInternalSetByTaskStatus(TaskStatus status) {
 		if (TaskStatus.WAITING.equals(status)) {
 			return waiting_jobs;
 		} else {
@@ -110,9 +110,8 @@ class InMemoryJobStore {
 			if (jobs_by_uuid.containsKey(job.getKey())) {
 				return false;
 			}
-			
 			jobs_by_uuid.put(job.getKey(), job);
-			getListByTaskStatus(job.getStatus()).add(job.getKey());
+			getInternalSetByTaskStatus(job.getStatus()).add(job.getKey());
 			
 			return true;
 		});
@@ -121,22 +120,28 @@ class InMemoryJobStore {
 	/**
 	 * @return Not thread safe.
 	 */
-	private boolean update(UUID uuid) {
+	private boolean updateInternalSets(UUID uuid) {
 		if (jobs_by_uuid.containsKey(uuid) == false) {
 			return false;
 		}
 		
 		Job job = jobs_by_uuid.get(uuid);
-		HashSet<UUID> planned_list = getListByTaskStatus(job.getStatus());
+		TaskStatus status = job.getStatus();
 		
-		if (planned_list.contains(uuid) == false) {
-			if (planned_list.equals(waiting_jobs) == false) {
-				waiting_jobs.remove(job.getKey());
+		if (TaskStatus.WAITING.equals(status)) {
+			if (waiting_jobs.contains(job.getKey()) == false) {
+				waiting_jobs.add(job.getKey());
 			}
-			if (planned_list.equals(others_jobs) == false) {
+			if (others_jobs.contains(job.getKey())) {
 				others_jobs.remove(job.getKey());
 			}
-			planned_list.add(uuid);
+		} else {
+			if (waiting_jobs.contains(job.getKey())) {
+				waiting_jobs.remove(job.getKey());
+			}
+			if (others_jobs.contains(job.getKey()) == false) {
+				others_jobs.add(job.getKey());
+			}
 		}
 		
 		return true;
@@ -148,7 +153,7 @@ class InMemoryJobStore {
 	 */
 	boolean update(Supplier<UUID> target) {
 		return syncWrite(() -> {
-			return update(target.get());
+			return updateInternalSets(target.get());
 		});
 	}
 	
@@ -172,7 +177,7 @@ class InMemoryJobStore {
 	
 	List<Job> getJobsByTaskStatus(TaskStatus status) {
 		return syncRead(() -> {
-			return getListByTaskStatus(status).stream().map(uuid -> {
+			return getInternalSetByTaskStatus(status).stream().map(uuid -> {
 				return jobs_by_uuid.get(uuid);
 			}).filter(job -> {
 				return job.getStatus().equals(status);
@@ -185,7 +190,7 @@ class InMemoryJobStore {
 	 */
 	<T> T getFromJobs(TaskStatus status, Function<Stream<Job>, T> stream_processor) {
 		return syncRead(() -> {
-			return stream_processor.apply(getListByTaskStatus(status).stream().map(uuid -> {
+			return stream_processor.apply(getInternalSetByTaskStatus(status).stream().map(uuid -> {
 				return jobs_by_uuid.get(uuid);
 			}).filter(job -> {
 				return job.getStatus().equals(status);
@@ -207,7 +212,7 @@ class InMemoryJobStore {
 	
 	Optional<RuntimeException> checkConsistency() {
 		return syncRead(() -> {
-			if (jobs_by_uuid.size() != waiting_jobs.size() + others_jobs.size()) {// FIXME
+			if (jobs_by_uuid.size() != waiting_jobs.size() + others_jobs.size()) {
 				return Optional.of(new IllegalStateException("Invalid lists sizes, jobs_by_uuid: " + jobs_by_uuid.size() + ", waiting_jobs: " + waiting_jobs.size() + ", others_jobs: " + others_jobs.size()));
 			}
 			
@@ -223,8 +228,8 @@ class InMemoryJobStore {
 				return others_jobs.stream().map(uuid -> {
 					if (jobs_by_uuid.containsKey(uuid) == false) {
 						return new NullPointerException("Missing " + uuid + " from others_jobs in jobs_by_uuid");
-					} else if (jobs_by_uuid.get(uuid).getStatus() == TaskStatus.WAITING | jobs_by_uuid.get(uuid).getStatus() == TaskStatus.DONE) {
-						return new IllegalStateException("Invalid job list position, " + jobs_by_uuid.get(uuid) + " can't be in OTHER list because it's in " + jobs_by_uuid.get(uuid).getStatus() + " state");
+					} else if (jobs_by_uuid.get(uuid).getStatus() == TaskStatus.WAITING) {
+						return new IllegalStateException("Invalid job list position, " + jobs_by_uuid.get(uuid) + " can't be in OTHER list because it's in WAITING state");
 					} else {
 						return null;
 					}
@@ -235,7 +240,7 @@ class InMemoryJobStore {
 	
 	void computeAndRemove(TaskStatus status, Function<Stream<Job>, Stream<Job>> stream_processor) {
 		syncWrite(() -> {
-			HashSet<UUID> task_list = getListByTaskStatus(status);
+			HashSet<UUID> task_list = getInternalSetByTaskStatus(status);
 			
 			stream_processor.apply(task_list.stream().map(uuid -> {
 				return jobs_by_uuid.get(uuid);
@@ -244,6 +249,8 @@ class InMemoryJobStore {
 					log.trace("Remove job " + job);
 				}
 				jobs_by_uuid.remove(job.getKey());
+				waiting_jobs.remove(job.getKey());
+				others_jobs.remove(job.getKey());
 				task_list.remove(job.getKey());
 			});
 			
@@ -270,6 +277,8 @@ class InMemoryJobStore {
 					log.trace("Remove job " + job);
 				}
 				jobs_by_uuid.remove(job.getKey());
+				waiting_jobs.remove(job.getKey());
+				others_jobs.remove(job.getKey());
 				task_list.remove(job.getKey());
 			});
 			
@@ -283,7 +292,7 @@ class InMemoryJobStore {
 	 */
 	List<Job> computeAndUpdate(TaskStatus status, BiFunction<Stream<Job>, Function<UUID, Job>, Stream<Job>> stream_processor, Consumer<Job> toUpdate) {
 		return syncWrite(() -> {
-			HashSet<UUID> task_list = getListByTaskStatus(status);
+			HashSet<UUID> task_list = getInternalSetByTaskStatus(status);
 			
 			/**
 			 * Search jobs
@@ -304,7 +313,7 @@ class InMemoryJobStore {
 					log.trace("Update job " + job);
 				}
 				
-				if (update(job.getKey()) == false) {
+				if (updateInternalSets(job.getKey()) == false) {
 					throw new RuntimeException("Can't update job " + job);
 				}
 			});

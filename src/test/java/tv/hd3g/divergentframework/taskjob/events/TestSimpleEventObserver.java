@@ -290,7 +290,9 @@ public class TestSimpleEventObserver extends TestCase {
 		assertEquals(2, job_observer.progr_counter.get());
 		assertEquals(1, job_observer.subjob_counter.get());
 		
-		task_job.checkStoreConsistency().get();
+		task_job.checkStoreConsistency().ifPresent(e -> {
+			throw e;
+		});
 		
 		assertEquals(0, job_observer.afterflush_counter.get());
 		

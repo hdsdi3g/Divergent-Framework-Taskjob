@@ -110,8 +110,8 @@ public class Gui extends Application {
 					 * Simulate an exec
 					 */
 					log.info("START JOB");
-					IntStream.range(0, 10_000).forEach(i -> {
-						broker.updateProgression(job, i, 10_000);
+					IntStream.range(0, 1_000).forEach(i -> {
+						broker.updateProgression(job, i, 1_000);
 						try {
 							Thread.sleep(1);
 						} catch (InterruptedException e) {

@@ -114,14 +114,6 @@ public class GuiController {
 				sp.setFitToWidth(true);
 				
 				alert.getDialogPane().setExpandableContent(sp);
-				
-				/*
-				java.lang.IllegalStateException: Invalid lists sizes, jobs_by_uuid: 3, waiting_jobs: 1, others_jobs: 3
-				at tv.hd3g.divergentframework.taskjob.broker.InMemoryJobStore.lambda$13(InMemoryJobStore.java:211)
-				at tv.hd3g.divergentframework.taskjob.broker.InMemoryJobStore.syncRead(InMemoryJobStore.java:70)
-				at tv.hd3g.divergentframework.taskjob.broker.InMemoryJobStore.checkConsistency(InMemoryJobStore.java:209)
-				at tv.hd3g.divergentframework.taskjob.broker.InMemoryBroker.checkStoreConsistency(InMemoryBroker.java:101)
-				 * */
 				alert.showAndWait();
 			}, () -> {
 				/**
