@@ -104,20 +104,34 @@ public class Gui extends Application {
 			task_job.registerEngine(engine);
 			engine.setContextRequirementTags(List.of("RQ1", "RQ2"));
 			
+			int sleep_time = 100_000;
+			
 			Engine engine2 = new Engine(1, "TstEng2", List.of("context2"), ctx_type -> {
 				return (job, broker, shouldStopProcessing) -> {
 					/**
 					 * Simulate an exec
 					 */
 					log.info("START JOB");
-					IntStream.range(0, 1_000).forEach(i -> {
-						broker.updateProgression(job, i, 1_000);
+					IntStream.range(0, sleep_time).forEach(i -> {
+						if (shouldStopProcessing.get()) {
+							/**
+							 * Dirty, but just for test
+							 */
+							return;
+						}
+						
+						broker.updateProgression(job, i, sleep_time);
 						try {
 							Thread.sleep(1);
 						} catch (InterruptedException e) {
 						}
 					});
-					log.info("END JOB");
+					
+					if (shouldStopProcessing.get()) {
+						log.info("STOPPED JOB");
+					} else {
+						log.info("END JOB");
+					}
 				};
 			});
 			task_job.registerEngine(engine2);
@@ -125,13 +139,10 @@ public class Gui extends Application {
 		});
 		t_demo2.start();
 		
-		// TODO, Action global: task_job.checkStoreConsistency();
-		// TODO, Action global: task_job.prepareToStop(executor)
-		// TODO, Action global: stop all actual engines (to do...) and destroy all engines.
-		// TODO, Action for selected job: task_job.switchStatus(job, new_status);
-		// TODO, Action for selected engine: task_job.unRegisterEngine(engine);
-		// TODO, Action for selected engine: engine.stopCurrentAll(executor)
-		// TODO, Action for selected worker_thread: worker.waitToStop(Executor executor)
+		// TODO Action for selected job: task_job.switchStatus(job, new_status);
+		// TODO Action for selected engine: task_job.unRegisterEngine(engine);
+		// TODO Action for selected engine: engine.stopCurrentAll(executor)
+		// TODO Action for selected worker_thread: worker.waitToStop(Executor executor)
 		
 		// TODO3 create Job log ? with a specific and contextual logger ?
 	}
@@ -141,7 +152,7 @@ public class Gui extends Application {
 	}
 	
 	public void stop() {
-		log.info("JavaFX GUI Interface is stop");
+		log.info("JavaFX GUI Interface is stopped");
 	}
 	
 }

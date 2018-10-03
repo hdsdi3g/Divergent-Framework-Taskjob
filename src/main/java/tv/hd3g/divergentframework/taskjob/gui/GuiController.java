@@ -186,26 +186,6 @@ public class GuiController {
 		table_job.setShowRoot(false);
 		table_job.setRoot(new TreeItem<>());
 		
-		GsonBuilder g_b = new GsonBuilder();
-		g_b.setPrettyPrinting();
-		g_b.disableHtmlEscaping();
-		g_b.serializeNulls();
-		final Gson gson = g_b.create();
-		
-		/**
-		 * On table_job selection change, update textarea_job_context with the job selected value, or clean it.
-		 */
-		table_job.getSelectionModel().selectedItemProperty().addListener((observable_value, old_value, new_value) -> {
-			if (new_value != null) {
-				JsonObject jo_context = new_value.getValue().getContextContent();
-				if (jo_context != null) {
-					textarea_job_context.setText(gson.toJson(jo_context));
-					return;
-				}
-			}
-			textarea_job_context.clear();
-		});
-		
 		table_engine_col_state.setCellValueFactory(p -> {
 			return new ReadOnlyStringWrapper(p.getValue().getValue().state);
 		});
@@ -227,6 +207,79 @@ public class GuiController {
 		
 		table_engine.setShowRoot(false);
 		table_engine.setRoot(new TreeItem<>());
+		
+		/**
+		 * Selection events zone
+		 */
+		GsonBuilder g_b = new GsonBuilder();
+		g_b.setPrettyPrinting();
+		g_b.disableHtmlEscaping();
+		g_b.serializeNulls();
+		final Gson gson = g_b.create();
+		
+		/**
+		 * On table_job selection change
+		 */
+		table_job.getSelectionModel().selectedItemProperty().addListener((observable_value, old_value, new_value) -> {
+			if (new_value != null) {
+				Job selected_job = new_value.getValue();
+				
+				/**
+				 * Select, in engine table, the worker for this selected job, if it's in processing.
+				 */
+				if (selected_job.getStatus().equals(TaskStatus.PROCESSING)) {
+					var o_tree_item_worker = table_engine.getRoot().getChildren().stream().flatMap(tree_item_engine -> {
+						return tree_item_engine.getChildren().stream();
+					}).filter(tree_item_worker -> {
+						return tree_item_worker.getValue().job_key.equals(selected_job.getKey().toString());
+					}).findFirst();
+					
+					if (o_tree_item_worker.isPresent()) {
+						table_engine.getSelectionModel().select(o_tree_item_worker.get());
+					} else {
+						log.warn("A job is running, but not worker for it");
+					}
+				}
+				
+				JsonObject jo_context = selected_job.getContextContent();
+				if (jo_context != null) {
+					/**
+					 * Update textarea_job_context with the job selected value, or clean it
+					 */
+					textarea_job_context.setText(gson.toJson(jo_context));
+					return;
+				}
+			}
+			textarea_job_context.clear();
+		});
+		
+		/**
+		 * table_engine selection change
+		 */
+		table_engine.getSelectionModel().selectedItemProperty().addListener((observable_value, old_value, new_value) -> {
+			if (new_value != null) {
+				TableItemEngineWorker item_worker = new_value.getValue();
+				
+				if (item_worker.worker != null) {
+					/**
+					 * Select, in job table, the job ran by this selected worker.
+					 */
+					Job current_working_job = item_worker.worker.getJob();
+					
+					var o_tree_item_job = searchChildrenJob(table_job.getRoot(), job -> {
+						return job.equals(current_working_job);
+					}).findFirst();
+					
+					if (o_tree_item_job.isPresent()) {
+						table_job.getSelectionModel().select(o_tree_item_job.get());
+					} else {
+						log.warn("A worker is running, but can't found job");
+					}
+				}
+				
+			}
+		});
+		
 	}
 	
 	public GuiController linkToTaskJob(InMemoryLocalTaskJob task_job) {
@@ -305,20 +358,6 @@ public class GuiController {
 			executor.execute(() -> {
 				Platform.runLater(r);
 			});
-		}
-		
-		/**
-		 * @param parent is not tested with search
-		 * @return never null
-		 */
-		private /*static*/ Stream<TreeItem<Job>> searchChildrenJob(TreeItem<Job> parent, Predicate<Job> search) {
-			Stream<TreeItem<Job>> searched_childrens = parent.getChildren().stream().filter(child -> search.test(child.getValue()));
-			
-			Stream<TreeItem<Job>> searched_childs_childrens = parent.getChildren().stream().flatMap(child -> {
-				return searchChildrenJob(child, search);
-			});
-			
-			return Stream.concat(searched_childrens, searched_childs_childrens);
 		}
 		
 		/**
@@ -524,6 +563,20 @@ public class GuiController {
 			});
 		}
 		
+	}
+	
+	/**
+	 * @param parent is not tested with search
+	 * @return never null
+	 */
+	private static Stream<TreeItem<Job>> searchChildrenJob(TreeItem<Job> parent, Predicate<Job> search) {
+		Stream<TreeItem<Job>> searched_childrens = parent.getChildren().stream().filter(child -> search.test(child.getValue()));
+		
+		Stream<TreeItem<Job>> searched_childs_childrens = parent.getChildren().stream().flatMap(child -> {
+			return searchChildrenJob(child, search);
+		});
+		
+		return Stream.concat(searched_childrens, searched_childs_childrens);
 	}
 	
 }
