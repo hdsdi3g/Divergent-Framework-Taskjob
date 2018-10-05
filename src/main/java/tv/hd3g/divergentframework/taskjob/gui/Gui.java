@@ -51,7 +51,7 @@ public class Gui extends Application {
 		
 		controller = d.getController();
 		
-		task_job = new InMemoryLocalTaskJob(1000, 8, 8, 8, TimeUnit.SECONDS);// TODO3 externalize this
+		task_job = new InMemoryLocalTaskJob(1000, 80, 80, 80, TimeUnit.SECONDS);// TODO3 externalize this
 		controller.startApp(primary_stage, root, task_job, () -> {
 			try {
 				task_job.prepareToStop(r -> r.run()).get();
@@ -139,7 +139,6 @@ public class Gui extends Application {
 		});
 		t_demo2.start();
 		
-		// FIXME why job PROCESS -> STOP -> WAITING will not start and be flushed ? Is switch to WAITING restart getnextjob ?
 		// TODO3 create Job log ? with a specific and contextual logger ?
 	}
 	

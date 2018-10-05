@@ -172,21 +172,10 @@ public class LocalQueue implements Queue {
 	
 	private static final Predicate<Engine> engineHasFreeWorkers = engine -> engine.actualFreeWorkers() > 0;
 	
-	private void searchAndStartNewActions() {
+	public void searchAndStartNewActions() {
 		if (isPendingStop()) {
 			return;
 		}
-		
-		Runnable onAfterProcess = () -> {
-			if (isPendingStop()) {
-				return;
-			}
-			
-			log.trace("Queue a searchAndStartNewActions");
-			maintenance_pool.execute(() -> {
-				searchAndStartNewActions();
-			});
-		};
 		
 		broker.getNextJobs(getActualEnginesContextTypes(true), () -> {
 			return engines.stream().mapToInt(engine -> {
@@ -212,7 +201,19 @@ public class LocalQueue implements Queue {
 				return false;
 			}
 			
-			return o_engine_potentially_free.get().addProcess(selected_action, broker, onAfterProcess);
+			return o_engine_potentially_free.get().addProcess(selected_action, broker, () -> {
+				/**
+				 * onAfterProcess
+				 */
+				if (isPendingStop()) {
+					return;
+				}
+				
+				log.trace("Queue a searchAndStartNewActions");
+				maintenance_pool.execute(() -> {
+					searchAndStartNewActions();
+				});
+			});
 		});
 	}
 	

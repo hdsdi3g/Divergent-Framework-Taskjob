@@ -326,6 +326,8 @@ public class GuiController {
 					table_job.getSelectionModel().clearSelection();
 					btnstopjobworker.setDisable(true);
 				}
+			} else {
+				btnstopjobworker.setDisable(true);
 			}
 		});
 		
@@ -639,11 +641,19 @@ public class GuiController {
 		
 		public void onEngineStartProcess(Engine engine, WorkerThread w_t) {
 			exec(() -> {
-				TreeItem<TableItemEngineWorker> item = getTreeItemByEngine(engine);
-				if (item == null) {
+				TreeItem<TableItemEngineWorker> item_engine = getTreeItemByEngine(engine);
+				if (item_engine == null) {
 					log.error("Can't found engine " + engine);
 					return;
 				}
+				
+				/**
+				 * Refresh engine line (with new status)
+				 */
+				var engine_value = item_engine.getValue();
+				item_engine.setValue(null);
+				engine_value.updateEngineOnly();
+				item_engine.setValue(engine_value);
 				
 				TableItemEngineWorker _worker = new TableItemEngineWorker();
 				_worker.engine = engine;
@@ -651,7 +661,7 @@ public class GuiController {
 				_worker.updateWorkerOnly();
 				
 				TreeItem<TableItemEngineWorker> item_worker = new TreeItem<>(_worker);
-				item.getChildren().add(item_worker);
+				item_engine.getChildren().add(item_worker);
 			});
 		}
 		
@@ -663,7 +673,16 @@ public class GuiController {
 					return;
 				}
 				
-				item_worker.getParent().getChildren().remove(item_worker);
+				TreeItem<TableItemEngineWorker> item_engine = item_worker.getParent();
+				item_engine.getChildren().remove(item_worker);
+				
+				/**
+				 * Refresh engine line (with new status)
+				 */
+				var engine_value = item_engine.getValue();
+				item_engine.setValue(null);
+				engine_value.updateEngineOnly();
+				item_engine.setValue(engine_value);
 			});
 		}
 		

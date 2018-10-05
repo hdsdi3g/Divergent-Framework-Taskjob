@@ -29,6 +29,7 @@ import com.google.gson.Gson;
 
 import tv.hd3g.divergentframework.taskjob.broker.InMemoryBroker;
 import tv.hd3g.divergentframework.taskjob.broker.Job;
+import tv.hd3g.divergentframework.taskjob.broker.TaskStatus;
 import tv.hd3g.divergentframework.taskjob.events.EngineEventObserver;
 import tv.hd3g.divergentframework.taskjob.queue.LocalQueue;
 import tv.hd3g.divergentframework.taskjob.queue.Queue;
@@ -101,4 +102,11 @@ public class InMemoryLocalTaskJob extends InMemoryBroker implements Queue {
 		return queue.getActualEnginesContextTypes(only_with_free_workers);
 	}
 	
+	public void switchStatus(Job job, TaskStatus new_status) {
+		super.switchStatus(job, new_status);
+		
+		if (TaskStatus.WAITING.equals(new_status)) {
+			queue.searchAndStartNewActions();
+		}
+	}
 }
