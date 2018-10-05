@@ -209,6 +209,8 @@ public class InMemoryBroker implements Broker {
 		});
 		if (ok == false) {
 			log.trace("Can't update job ", () -> job);
+		} else if (log.isTraceEnabled()) {
+			log.trace("Update job progression: " + actual_value + "/" + max_value + " for " + job);
 		}
 	}
 	
@@ -217,6 +219,8 @@ public class InMemoryBroker implements Broker {
 			return job.switchToError(e).getKey();
 		});
 		if (ok == false) {
+			log.debug("Job " + job + " is switched in error", e);
+		} else {
 			log.warn("Can't update job ", () -> job);
 		}
 	}
@@ -225,8 +229,10 @@ public class InMemoryBroker implements Broker {
 		boolean ok = store.update(() -> {
 			return job.switchStatus(new_status).getKey();
 		});
-		if (ok == false) {
-			log.warn("Can't update job ", () -> job);
+		if (ok) {
+			log.debug("Switch status for job ", () -> job);
+		} else {
+			log.warn("Can't update job " + job);
 		}
 	}
 	

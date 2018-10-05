@@ -70,7 +70,7 @@ public final class Job {
 		sb.append(description.substring(0, Math.min(description.length(), 30)));
 		sb.append(")");
 		
-		if (last_error_message != null) {
+		/*if (last_error_message != null) {
 			sb.append("\"");
 			sb.append(last_error_message);
 			sb.append("\"");
@@ -79,7 +79,7 @@ public final class Job {
 			sb.append("/");
 			sb.append(max_progression_value);
 			sb.append(",");
-		}
+		}*/
 		
 		if (linked_job != null) {
 			sb.append("L_");

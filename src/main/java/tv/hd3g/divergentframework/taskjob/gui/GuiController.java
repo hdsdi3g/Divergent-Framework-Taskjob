@@ -24,7 +24,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -43,7 +45,7 @@ import javafx.fxml.FXML;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ChoiceBox;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TreeItem;
@@ -62,6 +64,26 @@ import tv.hd3g.divergentframework.taskjob.worker.WorkerThread;
 public class GuiController {
 	private static Logger log = LogManager.getLogger();
 	
+	private final ExecutorService executor;
+	
+	public GuiController() {
+		executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(), r -> {
+			Thread t = new Thread(r);
+			t.setDaemon(true);
+			t.setName(getClass().getSimpleName());
+			t.setPriority(Thread.MIN_PRIORITY);
+			return t;
+		});
+	}
+	
+	/**
+	 * Non blocking for Engine/Event, and polite from JavaFX side.
+	 */
+	private void exec(Runnable r) {
+		executor.execute(() -> {
+			Platform.runLater(r);
+		});
+	}
 	// private Stage stage;
 	// private BorderPane root;
 	
@@ -250,11 +272,14 @@ public class GuiController {
 				/**
 				 * Set choicebox_taskstatus, with only valid status that job can switch
 				 */
-				choicebox_taskstatus.disableProperty().set(false);
-				choicebox_taskstatus.getItems().clear();
-				choicebox_taskstatus.getItems().addAll(Arrays.stream(TaskStatus.values()).filter(status -> {
+				combobox_taskstatus.disableProperty().set(false);
+				combobox_taskstatus.getItems().clear();
+				combobox_taskstatus.getItems().addAll(Arrays.stream(TaskStatus.values()).filter(status -> {
 					return selected_job_status.userCanSwitchTo(status);
 				}).collect(Collectors.toUnmodifiableList()));
+				if (combobox_taskstatus.getItems().isEmpty()) {
+					combobox_taskstatus.disableProperty().set(true);
+				}
 				
 				/**
 				 * Update textarea_job_context with the job selected value.
@@ -269,7 +294,8 @@ public class GuiController {
 			/**
 			 * No selection, reset optional status/function
 			 */
-			choicebox_taskstatus.disableProperty().set(true);
+			combobox_taskstatus.disableProperty().set(true);
+			combobox_taskstatus.getItems().clear();
 			textarea_job_context.clear();
 		});
 		
@@ -292,14 +318,58 @@ public class GuiController {
 					
 					if (o_tree_item_job.isPresent()) {
 						table_job.getSelectionModel().select(o_tree_item_job.get());
+						btnstopjobworker.setDisable(false);
 					} else {
 						log.warn("A worker is running, but can't found job");
 					}
 				} else {
 					table_job.getSelectionModel().clearSelection();
+					btnstopjobworker.setDisable(true);
 				}
-				
 			}
+		});
+		
+		/**
+		 * Change selected job status
+		 */
+		combobox_taskstatus.setOnAction(event -> {
+			event.consume();
+			if (combobox_taskstatus.getSelectionModel().isEmpty()) {
+				return;
+			}
+			if (table_job.getSelectionModel().isEmpty()) {
+				return;
+			}
+			
+			TaskStatus selected_taskstatus = combobox_taskstatus.getSelectionModel().getSelectedItem();
+			Job selected_job = table_job.getSelectionModel().getSelectedItem().getValue();
+			
+			log.info("Switch status " + selected_taskstatus + " for job " + selected_job);
+			
+			task_job.switchStatus(selected_job, selected_taskstatus);
+			combobox_taskstatus.getSelectionModel().clearSelection();
+		});
+		
+		btnstopjobworker.setOnAction(event -> {
+			event.consume();
+			if (table_engine.getSelectionModel().isEmpty()) {
+				return;
+			}
+			var selected_line = table_engine.getSelectionModel().getSelectedItem().getValue();
+			if (selected_line.worker == null) {
+				return;
+			}
+			WorkerThread worker = selected_line.worker;
+			
+			log.info("Set stop execution for " + worker.getJob() + " on worker " + worker.getName() + "...");
+			
+			worker.waitToStop(executor).thenRunAsync(() -> {
+				log.info("Job " + worker.getJob() + " is now stopped");
+				/*Platform.runLater(() -> {
+					
+				});*/
+			}, executor);
+			
 		});
 		
 		/*table_engine.focusedProperty().addListener((observable_value, old_value, new_value) -> {
@@ -321,9 +391,9 @@ public class GuiController {
 	 */
 	
 	@FXML
-	private ChoiceBox<TaskStatus> choicebox_taskstatus;// XXX onChange + en/disable
+	private ComboBox<TaskStatus> combobox_taskstatus;
 	@FXML
-	private Button btnstopjobworker;// XXX onClick + en/disable
+	private Button btnstopjobworker;
 	@FXML
 	private Button btnstop_engineworkers;// XXX onClick + en/disable
 	@FXML
@@ -376,24 +446,12 @@ public class GuiController {
 	private TextArea textarea_job_context;
 	
 	private class EventDispatcher implements EngineEventObserver, JobEventObserver {
-		private final ExecutorService executor;
 		private final ObservableList<TreeItem<Job>> table_job_content = table_job.getRoot().getChildren();
 		private final ObservableList<TreeItem<TableItemEngineWorker>> table_engine_content = table_engine.getRoot().getChildren();
 		
 		private EventDispatcher(InMemoryLocalTaskJob task_job) {
-			executor = Executors.newFixedThreadPool(1);
-			
 			task_job.setEngineObserver(this);
 			task_job.setJobObserver(this);
-		}
-		
-		/**
-		 * Non blocking for Engine/Event, and polite from JavaFX side.
-		 */
-		private void exec(Runnable r) {
-			executor.execute(() -> {
-				Platform.runLater(r);
-			});
 		}
 		
 		/**

@@ -139,11 +139,7 @@ public class Gui extends Application {
 		});
 		t_demo2.start();
 		
-		// TODO Action for selected job: task_job.switchStatus(job, new_status);
-		// TODO Action for selected engine: task_job.unRegisterEngine(engine);
-		// TODO Action for selected engine: engine.stopCurrentAll(executor)
-		// TODO Action for selected worker_thread: worker.waitToStop(Executor executor)
-		
+		// FIXME why job PROCESS -> STOP -> WAITING will not start and be flushed ? Is switch to WAITING restart getnextjob ?
 		// TODO3 create Job log ? with a specific and contextual logger ?
 	}
 	
