@@ -19,12 +19,14 @@ package tv.hd3g.divergentframework.taskjob.gui;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
@@ -41,6 +43,7 @@ import javafx.fxml.FXML;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TreeItem;
@@ -223,11 +226,12 @@ public class GuiController {
 		table_job.getSelectionModel().selectedItemProperty().addListener((observable_value, old_value, new_value) -> {
 			if (new_value != null) {
 				Job selected_job = new_value.getValue();
+				final TaskStatus selected_job_status = selected_job.getStatus();
 				
 				/**
 				 * Select, in engine table, the worker for this selected job, if it's in processing.
 				 */
-				if (selected_job.getStatus().equals(TaskStatus.PROCESSING)) {
+				if (selected_job_status.equals(TaskStatus.PROCESSING)) {
 					var o_tree_item_worker = table_engine.getRoot().getChildren().stream().flatMap(tree_item_engine -> {
 						return tree_item_engine.getChildren().stream();
 					}).filter(tree_item_worker -> {
@@ -239,17 +243,33 @@ public class GuiController {
 					} else {
 						log.warn("A job is running, but not worker for it");
 					}
+				} else {
+					table_engine.getSelectionModel().clearSelection();
 				}
 				
+				/**
+				 * Set choicebox_taskstatus, with only valid status that job can switch
+				 */
+				choicebox_taskstatus.disableProperty().set(false);
+				choicebox_taskstatus.getItems().clear();
+				choicebox_taskstatus.getItems().addAll(Arrays.stream(TaskStatus.values()).filter(status -> {
+					return selected_job_status.userCanSwitchTo(status);
+				}).collect(Collectors.toUnmodifiableList()));
+				
+				/**
+				 * Update textarea_job_context with the job selected value.
+				 */
 				JsonObject jo_context = selected_job.getContextContent();
 				if (jo_context != null) {
-					/**
-					 * Update textarea_job_context with the job selected value, or clean it
-					 */
 					textarea_job_context.setText(gson.toJson(jo_context));
 					return;
 				}
 			}
+			
+			/**
+			 * No selection, reset optional status/function
+			 */
+			choicebox_taskstatus.disableProperty().set(true);
 			textarea_job_context.clear();
 		});
 		
@@ -275,10 +295,17 @@ public class GuiController {
 					} else {
 						log.warn("A worker is running, but can't found job");
 					}
+				} else {
+					table_job.getSelectionModel().clearSelection();
 				}
 				
 			}
 		});
+		
+		/*table_engine.focusedProperty().addListener((observable_value, old_value, new_value) -> {
+		});
+		table_job.focusedProperty().addListener((observable_value, old_value, new_value) -> {
+		});*/
 		
 	}
 	
@@ -292,6 +319,15 @@ public class GuiController {
 	 * JAVAFX CONTROLS ZONE
 	 **********************
 	 */
+	
+	@FXML
+	private ChoiceBox<TaskStatus> choicebox_taskstatus;// XXX onChange + en/disable
+	@FXML
+	private Button btnstopjobworker;// XXX onClick + en/disable
+	@FXML
+	private Button btnstop_engineworkers;// XXX onClick + en/disable
+	@FXML
+	private Button btnremoveengine;// XXX onClick + en/disable
 	
 	@FXML
 	private Button btnclose;
@@ -422,6 +458,16 @@ public class GuiController {
 				}
 				item.setValue(null);
 				item.setValue(job);
+				
+				switch (cause) {
+				case SWITCH_STATUS:
+				case SWITCH_TO_ERROR:
+					table_job.getSelectionModel().clearSelection();
+					break;
+				default:
+					break;
+				}
+				
 			});
 		}
 		

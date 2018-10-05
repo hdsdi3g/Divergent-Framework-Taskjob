@@ -47,6 +47,17 @@ public enum TaskStatus {
 		boolean isDone() {
 			return false;
 		}
+		
+		public boolean _userCanSwitchTo(TaskStatus new_status) {
+			switch (new_status) {
+			case POSTPONED:
+			case WAITING:
+			case DONE:
+				return true;
+			default:
+				return false;
+			}
+		}
 	},
 	POSTPONED {
 		public boolean canSwitchTo(TaskStatus new_status) {
@@ -76,6 +87,17 @@ public enum TaskStatus {
 		
 		boolean isDone() {
 			return false;
+		}
+		
+		public boolean _userCanSwitchTo(TaskStatus new_status) {
+			switch (new_status) {
+			case CANCELED:
+			case WAITING:
+			case DONE:
+				return true;
+			default:
+				return false;
+			}
 		}
 	},
 	STOPPING {
@@ -107,6 +129,10 @@ public enum TaskStatus {
 		boolean isDone() {
 			return true;
 		}
+		
+		public boolean _userCanSwitchTo(TaskStatus new_status) {
+			return false;
+		}
 	},
 	STOPPED {
 		public boolean canSwitchTo(TaskStatus new_status) {
@@ -136,6 +162,18 @@ public enum TaskStatus {
 		
 		boolean isDone() {
 			return true;
+		}
+		
+		public boolean _userCanSwitchTo(TaskStatus new_status) {
+			switch (new_status) {
+			case WAITING:
+			case DONE:
+			case CANCELED:
+			case POSTPONED:
+				return true;
+			default:
+				return false;
+			}
 		}
 	},
 	ERROR {
@@ -167,6 +205,17 @@ public enum TaskStatus {
 		boolean isDone() {
 			return true;
 		}
+		
+		public boolean _userCanSwitchTo(TaskStatus new_status) {
+			switch (new_status) {
+			case WAITING:
+			case CANCELED:
+			case DONE:
+				return true;
+			default:
+				return false;
+			}
+		}
 	},
 	PREPARING {
 		public boolean canSwitchTo(TaskStatus new_status) {
@@ -196,6 +245,10 @@ public enum TaskStatus {
 		
 		boolean isDone() {
 			return true;
+		}
+		
+		public boolean _userCanSwitchTo(TaskStatus new_status) {
+			return false;
 		}
 	},
 	WAITING {
@@ -227,6 +280,17 @@ public enum TaskStatus {
 		boolean isDone() {
 			return false;
 		}
+		
+		public boolean _userCanSwitchTo(TaskStatus new_status) {
+			switch (new_status) {
+			case CANCELED:
+			case POSTPONED:
+			case PREPARING:
+				return true;
+			default:
+				return false;
+			}
+		}
 	},
 	DONE {
 		public boolean canSwitchTo(TaskStatus new_status) {
@@ -256,6 +320,15 @@ public enum TaskStatus {
 		
 		boolean isDone() {
 			return true;
+		}
+		
+		public boolean _userCanSwitchTo(TaskStatus new_status) {
+			switch (new_status) {
+			case WAITING:
+				return true;
+			default:
+				return false;
+			}
 		}
 	},
 	PROCESSING {
@@ -287,9 +360,22 @@ public enum TaskStatus {
 		boolean isDone() {
 			return true;
 		}
+		
+		public boolean _userCanSwitchTo(TaskStatus new_status) {
+			return false;
+		}
 	};
 	
 	public abstract boolean canSwitchTo(TaskStatus new_status);
+	
+	protected abstract boolean _userCanSwitchTo(TaskStatus new_status);
+	
+	public boolean userCanSwitchTo(TaskStatus new_status) {
+		if (canSwitchTo(new_status)) {
+			return _userCanSwitchTo(new_status);
+		}
+		return false;
+	}
 	
 	abstract boolean statusSwitchShouldChangeJobStartDate();
 	
