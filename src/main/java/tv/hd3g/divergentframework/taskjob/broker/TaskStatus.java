@@ -52,7 +52,6 @@ public enum TaskStatus {
 			switch (new_status) {
 			case POSTPONED:
 			case WAITING:
-			case DONE:
 				return true;
 			default:
 				return false;
@@ -93,7 +92,6 @@ public enum TaskStatus {
 			switch (new_status) {
 			case CANCELED:
 			case WAITING:
-			case DONE:
 				return true;
 			default:
 				return false;
@@ -167,7 +165,6 @@ public enum TaskStatus {
 		public boolean _userCanSwitchTo(TaskStatus new_status) {
 			switch (new_status) {
 			case WAITING:
-			case DONE:
 			case CANCELED:
 			case POSTPONED:
 				return true;
@@ -210,7 +207,6 @@ public enum TaskStatus {
 			switch (new_status) {
 			case WAITING:
 			case CANCELED:
-			case DONE:
 				return true;
 			default:
 				return false;

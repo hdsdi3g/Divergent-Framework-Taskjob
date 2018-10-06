@@ -35,6 +35,7 @@ import javafx.stage.Stage;
 import tv.hd3g.divergentframework.taskjob.InMemoryLocalTaskJob;
 import tv.hd3g.divergentframework.taskjob.broker.Job;
 import tv.hd3g.divergentframework.taskjob.broker.TaskStatus;
+import tv.hd3g.divergentframework.taskjob.events.JobEventLogAppender;
 import tv.hd3g.divergentframework.taskjob.worker.Engine;
 
 public class Gui extends Application {
@@ -50,6 +51,8 @@ public class Gui extends Application {
 		BorderPane root = (BorderPane) d.load(getClass().getResource("GuiPanel.fxml").openStream());
 		
 		controller = d.getController();
+		
+		JobEventLogAppender.declareAppender();
 		
 		task_job = new InMemoryLocalTaskJob(1000, 80, 80, 80, TimeUnit.SECONDS);// TODO3 externalize this
 		controller.startApp(primary_stage, root, task_job, () -> {
@@ -104,7 +107,7 @@ public class Gui extends Application {
 			task_job.registerEngine(engine);
 			engine.setContextRequirementTags(List.of("RQ1", "RQ2"));
 			
-			int sleep_time = 100_000;
+			int sleep_time = 1_000;
 			
 			Engine engine2 = new Engine(1, "TstEng2", List.of("context2"), ctx_type -> {
 				return (job, broker, shouldStopProcessing) -> {
@@ -139,7 +142,7 @@ public class Gui extends Application {
 		});
 		t_demo2.start();
 		
-		// TODO3 create Job log ? with a specific and contextual logger ?
+		// TODO2 add more log messages
 	}
 	
 	public static void main(String[] args) {

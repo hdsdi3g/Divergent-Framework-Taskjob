@@ -322,12 +322,24 @@ public class GuiController {
 					} else {
 						log.warn("A worker is running, but can't found job");
 					}
+					
+					btnstop_engineworkers.setDisable(true);
 				} else {
 					table_job.getSelectionModel().clearSelection();
 					btnstopjobworker.setDisable(true);
+					
+					/**
+					 * Display btn for stop workers only if engine is selected and it works
+					 */
+					if (item_worker.engine != null) {
+						btnstop_engineworkers.setDisable(item_worker.engine.isRunning() == false);
+					} else {
+						btnstop_engineworkers.setDisable(true);
+					}
 				}
 			} else {
 				btnstopjobworker.setDisable(true);
+				btnstop_engineworkers.setDisable(true);
 			}
 		});
 		
@@ -374,6 +386,21 @@ public class GuiController {
 			
 		});
 		
+		btnstop_engineworkers.setOnAction(event -> {
+			event.consume();
+			var item = table_engine.getSelectionModel().getSelectedItem();
+			Engine engine = item.getValue().engine;
+			
+			log.info("Stop all running workers (" + (engine.maxWorkersCount() - engine.actualFreeWorkers()) + ") for engine " + engine + "...");
+			
+			engine.stopCurrentAll(executor).thenRunAsync(() -> {
+				log.info("Engine " + engine + " is now free of workers");
+				/*Platform.runLater(() -> {
+					
+				});*/
+			}, executor);
+		});
+		
 		/*table_engine.focusedProperty().addListener((observable_value, old_value, new_value) -> {
 		});
 		table_job.focusedProperty().addListener((observable_value, old_value, new_value) -> {
@@ -397,9 +424,7 @@ public class GuiController {
 	@FXML
 	private Button btnstopjobworker;
 	@FXML
-	private Button btnstop_engineworkers;// XXX onClick + en/disable
-	@FXML
-	private Button btnremoveengine;// XXX onClick + en/disable
+	private Button btnstop_engineworkers;
 	
 	@FXML
 	private Button btnclose;
@@ -446,6 +471,8 @@ public class GuiController {
 	
 	@FXML
 	private TextArea textarea_job_context;
+	
+	// TODO2 ContextMenu in tables ?
 	
 	private class EventDispatcher implements EngineEventObserver, JobEventObserver {
 		private final ObservableList<TreeItem<Job>> table_job_content = table_job.getRoot().getChildren();
@@ -662,7 +689,20 @@ public class GuiController {
 				
 				TreeItem<TableItemEngineWorker> item_worker = new TreeItem<>(_worker);
 				item_engine.getChildren().add(item_worker);
+				
+				updateBtnStopEngineWorkersDisableState();
 			});
+		}
+		
+		private void updateBtnStopEngineWorkersDisableState() {
+			if (table_engine.getSelectionModel().isEmpty()) {
+				btnstop_engineworkers.setDisable(true);
+				return;
+			}
+			
+			var item = table_engine.getSelectionModel().getSelectedItem();
+			TableItemEngineWorker e_w = item.getValue();
+			btnstop_engineworkers.setDisable(e_w.worker == null);
 		}
 		
 		public void onEngineEndsProcess(Engine engine, WorkerThread w_t) {
@@ -683,6 +723,8 @@ public class GuiController {
 				item_engine.setValue(null);
 				engine_value.updateEngineOnly();
 				item_engine.setValue(engine_value);
+				
+				updateBtnStopEngineWorkersDisableState();
 			});
 		}
 		
