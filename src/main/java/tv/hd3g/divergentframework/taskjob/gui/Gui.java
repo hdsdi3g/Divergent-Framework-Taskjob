@@ -35,8 +35,10 @@ import javafx.stage.Stage;
 import tv.hd3g.divergentframework.taskjob.InMemoryLocalTaskJob;
 import tv.hd3g.divergentframework.taskjob.broker.Job;
 import tv.hd3g.divergentframework.taskjob.broker.TaskStatus;
+import tv.hd3g.divergentframework.taskjob.events.EngineEventObserver;
 import tv.hd3g.divergentframework.taskjob.events.JobEventLogAppender;
 import tv.hd3g.divergentframework.taskjob.worker.Engine;
+import tv.hd3g.divergentframework.taskjob.worker.WorkerThread;
 
 public class Gui extends Application {
 	private static Logger log = LogManager.getLogger();
@@ -52,7 +54,7 @@ public class Gui extends Application {
 		
 		controller = d.getController();
 		
-		JobEventLogAppender.declareAppender();
+		JobEventLogAppender job_event_appender = JobEventLogAppender.declareAppender();
 		
 		task_job = new InMemoryLocalTaskJob(1000, 80, 80, 80, TimeUnit.SECONDS);// TODO3 externalize this
 		controller.startApp(primary_stage, root, task_job, () -> {
@@ -62,6 +64,17 @@ public class Gui extends Application {
 				log.error("Can't stop task_jobs", e);
 			}
 			System.exit(0);
+		});
+		
+		task_job.addEngineObserver(new EngineEventObserver() {
+			
+			public void onEngineStartProcess(Engine engine, WorkerThread w_t) {
+				job_event_appender.monitorThreadToLog(w_t);
+			}
+			
+			public void onEngineEndsProcess(Engine engine, WorkerThread w_t) {
+				job_event_appender.unMonitorThreadToLog(w_t);
+			}
 		});
 		
 		controller.linkToTaskJob(task_job);
@@ -92,7 +105,7 @@ public class Gui extends Application {
 				task_job.switchStatus(job1_sub, TaskStatus.POSTPONED);
 			} catch (InterruptedException e) {
 			}
-		});
+		}, "DemoThread1");
 		t_demo.start();
 		
 		Thread t_demo2 = new Thread(() -> {
@@ -114,7 +127,7 @@ public class Gui extends Application {
 					/**
 					 * Simulate an exec
 					 */
-					log.info("START JOB");
+					log.info("START JOB IN DEMO ENGINE 2");
 					IntStream.range(0, sleep_time).forEach(i -> {
 						if (shouldStopProcessing.get()) {
 							/**
@@ -131,15 +144,15 @@ public class Gui extends Application {
 					});
 					
 					if (shouldStopProcessing.get()) {
-						log.info("STOPPED JOB");
+						log.info("STOPPED JOB IN DEMO ENGINE 2");
 					} else {
-						log.info("END JOB");
+						log.info("END JOB IN DEMO ENGINE 2");
 					}
 				};
 			});
 			task_job.registerEngine(engine2);
 			engine2.setContextRequirementTags(List.of("RqT1", "RqT2"));
-		});
+		}, "DemoThread2");
 		t_demo2.start();
 		
 		// TODO2 add more log messages

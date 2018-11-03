@@ -35,6 +35,7 @@ import org.apache.logging.log4j.Logger;
 import tv.hd3g.divergentframework.taskjob.broker.Broker;
 import tv.hd3g.divergentframework.taskjob.events.EngineEventObserver;
 import tv.hd3g.divergentframework.taskjob.worker.Engine;
+import tv.hd3g.divergentframework.taskjob.worker.WorkerThread;
 
 /**
  * Connect Engines and Broker, in this Java process.
@@ -49,9 +50,14 @@ public class LocalQueue implements Queue {
 	
 	private final ThreadPoolExecutor maintenance_pool;
 	
-	private EngineEventObserver engine_observer;
+	private final ArrayList<EngineEventObserver> engine_observer_list;
+	
+	private final InternalDispatcherEngineEventObserver engine_observer;
 	
 	public LocalQueue(Broker broker) {
+		engine_observer_list = new ArrayList<>();
+		engine_observer = new InternalDispatcherEngineEventObserver();
+		
 		this.broker = broker;
 		if (broker == null) {
 			throw new NullPointerException("\"broker\" can't to be null");
@@ -60,7 +66,7 @@ public class LocalQueue implements Queue {
 			Thread t = new Thread(r);
 			t.setDaemon(true);
 			t.setPriority(Thread.MIN_PRIORITY);
-			t.setName("Maintenance Thread " + new Date());
+			t.setName("Maintenance " + new Date());
 			return t;
 		});
 		
@@ -77,11 +83,53 @@ public class LocalQueue implements Queue {
 		});
 	}
 	
+	private class InternalDispatcherEngineEventObserver implements EngineEventObserver {
+		public void onEngineChangeContextRequirementTags(Engine engine) {
+			engine_observer_list.parallelStream().forEach(o -> {
+				o.onEngineChangeContextRequirementTags(engine);
+			});
+		}
+		
+		public void onEngineEndsProcess(Engine engine, WorkerThread w_t) {
+			engine_observer_list.parallelStream().forEach(o -> {
+				o.onEngineEndsProcess(engine, w_t);
+			});
+		}
+		
+		public void onEngineStartProcess(Engine engine, WorkerThread w_t) {
+			engine_observer_list.parallelStream().forEach(o -> {
+				o.onEngineStartProcess(engine, w_t);
+			});
+		}
+		
+		public void onEngineStop(Engine engine) {
+			engine_observer_list.parallelStream().forEach(o -> {
+				o.onEngineStop(engine);
+			});
+		}
+		
+		public void onRegisterEngine(Engine engine) {
+			engine_observer_list.parallelStream().forEach(o -> {
+				o.onRegisterEngine(engine);
+			});
+		}
+		
+		public void onUnRegisterEngine(Engine engine) {
+			engine_observer_list.parallelStream().forEach(o -> {
+				o.onUnRegisterEngine(engine);
+			});
+		}
+	}
+	
 	/**
 	 * @return this
 	 */
-	public LocalQueue setEngineObserver(EngineEventObserver engine_observer) {
-		this.engine_observer = engine_observer;
+	public synchronized LocalQueue addEngineObserver(EngineEventObserver engine_observer) {
+		if (engine_observer == null) {
+			throw new NullPointerException("\"engine_observer\" can't to be null");
+		}
+		
+		engine_observer_list.add(engine_observer);
 		return this;
 	}
 	

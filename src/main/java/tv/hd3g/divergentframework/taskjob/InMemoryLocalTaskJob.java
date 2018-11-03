@@ -53,8 +53,8 @@ public class InMemoryLocalTaskJob extends InMemoryBroker implements Queue {
 	/**
 	 * @return this
 	 */
-	public InMemoryLocalTaskJob setEngineObserver(EngineEventObserver engine_observer) {
-		queue.setEngineObserver(engine_observer);
+	public InMemoryLocalTaskJob addEngineObserver(EngineEventObserver engine_observer) {
+		queue.addEngineObserver(engine_observer);
 		return this;
 	}
 	

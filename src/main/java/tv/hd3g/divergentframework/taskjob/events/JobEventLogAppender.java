@@ -41,27 +41,53 @@ public class JobEventLogAppender extends AbstractAppender {
 	
 	// private static Logger log = LogManager.getLogger();
 	
-	private ConcurrentHashMap<Job, LinkedBlockingQueue<LogEvent>> logevents_by_job;
+	private final ConcurrentHashMap<Job, LinkedBlockingQueue<LogEvent>> logevents_by_job;
+	private final ConcurrentHashMap<Thread, Boolean> monitored_threads;
 	
 	public JobEventLogAppender(String name, Filter filter) {
 		super(name, filter, PatternLayout.createDefaultLayout());
 		logevents_by_job = new ConcurrentHashMap<>();
+		monitored_threads = new ConcurrentHashMap<>();
+	}
+	
+	public void monitorThreadToLog(Thread t) {
+		monitored_threads.put(t, true);
+	}
+	
+	public void unMonitorThreadToLog(Thread t) {
+		monitored_threads.remove(t);
 	}
 	
 	public void append(LogEvent event) {
+		if (monitored_threads.containsKey(Thread.currentThread()) == false) {
+			return;
+		}
 		// XXX create specific and contextual logger, do something custom
-		System.out.println("+++\t" + event.getThreadName() + "\t" + event.getMessage().getFormattedMessage());
+		System.out.println("+++\t" + Thread.currentThread().getName() + "\t\t" + event.getThreadName() + "\t" + event.getMessage().getFormattedMessage());
+	}
+	
+	public static JobEventLogAppender declareAppender() {
+		final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+		final org.apache.logging.log4j.core.config.Configuration config = ctx.getConfiguration();
+		
+		LocalFilter filter = new LocalFilter();
+		JobEventLogAppender instance = new JobEventLogAppender("WorkerThreadJob", filter);
+		instance.start();
+		
+		config.addAppender(instance);
+		config.getLoggers().values().forEach(logger_config -> {
+			logger_config.addAppender(instance, Level.ALL, filter);
+		});
+		config.getRootLogger().addAppender(instance, Level.ALL, filter);
+		
+		return instance;
 	}
 	
 	private static class LocalFilter implements Filter {
 		public void stop() {
-			// TODO Auto-generated method stub
-			
 		}
 		
 		public void start() {
-			// TODO Auto-generated method stub
-			
 		}
 		
 		public boolean isStopped() {
@@ -73,8 +99,6 @@ public class JobEventLogAppender extends AbstractAppender {
 		}
 		
 		public void initialize() {
-			// TODO Auto-generated method stub
-			
 		}
 		
 		public State getState() {
@@ -144,20 +168,6 @@ public class JobEventLogAppender extends AbstractAppender {
 		public Result filter(LogEvent event) {
 			return Result.ACCEPT;
 		}
-	}
-	
-	public static void declareAppender() {
-		final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-		final org.apache.logging.log4j.core.config.Configuration config = ctx.getConfiguration();
-		
-		LocalFilter filter = new LocalFilter();
-		JobEventLogAppender instance = new JobEventLogAppender("WorkerThreadJob", filter);
-		
-		config.addAppender(instance);
-		config.getLoggers().values().forEach(logger_config -> {
-			logger_config.addAppender(instance, Level.ALL, filter);
-		});
-		config.getRootLogger().addAppender(instance, Level.ALL, filter);
 	}
 	
 }

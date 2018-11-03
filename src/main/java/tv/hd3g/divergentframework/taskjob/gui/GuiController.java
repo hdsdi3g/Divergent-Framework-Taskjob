@@ -479,7 +479,7 @@ public class GuiController {
 		private final ObservableList<TreeItem<TableItemEngineWorker>> table_engine_content = table_engine.getRoot().getChildren();
 		
 		private EventDispatcher(InMemoryLocalTaskJob task_job) {
-			task_job.setEngineObserver(this);
+			task_job.addEngineObserver(this);
 			task_job.setJobObserver(this);
 		}
 		

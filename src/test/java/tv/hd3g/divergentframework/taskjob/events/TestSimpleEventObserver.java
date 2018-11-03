@@ -183,7 +183,7 @@ public class TestSimpleEventObserver extends TestCase {
 	public void testAddRemoveEngine() {
 		InMemoryLocalTaskJob task_job = new InMemoryLocalTaskJob(10, 1, 1, 1, TimeUnit.SECONDS);
 		TestEngineObserver engine_observer = new TestEngineObserver();
-		task_job.setEngineObserver(engine_observer);
+		task_job.addEngineObserver(engine_observer);
 		
 		assertEquals(0, engine_observer.reg_engine_counter.get());
 		assertEquals(0, engine_observer.un_reg_engine_counter.get());
@@ -228,7 +228,7 @@ public class TestSimpleEventObserver extends TestCase {
 		TestEngineObserver engine_observer = new TestEngineObserver();
 		TestJobObserver job_observer = new TestJobObserver();
 		
-		task_job.setEngineObserver(engine_observer);
+		task_job.addEngineObserver(engine_observer);
 		task_job.setJobObserver(job_observer);
 		
 		engine_observer.setReference(task_job.registerGenericEngine(1, "DogEngine", gson, Dog.class, () -> {

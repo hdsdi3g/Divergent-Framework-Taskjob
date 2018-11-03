@@ -21,16 +21,22 @@ import tv.hd3g.divergentframework.taskjob.worker.WorkerThread;
 
 public interface EngineEventObserver {
 	
-	void onEngineChangeContextRequirementTags(Engine engine);
+	default void onEngineChangeContextRequirementTags(Engine engine) {
+	}
 	
-	void onEngineStop(Engine engine);
+	default void onEngineStop(Engine engine) {
+	}
 	
-	void onEngineStartProcess(Engine engine, WorkerThread w_t);
+	default void onEngineStartProcess(Engine engine, WorkerThread w_t) {
+	}
 	
-	void onEngineEndsProcess(Engine engine, WorkerThread w_t);
+	default void onEngineEndsProcess(Engine engine, WorkerThread w_t) {
+	}
 	
-	void onRegisterEngine(Engine engine);
+	default void onRegisterEngine(Engine engine) {
+	}
 	
-	void onUnRegisterEngine(Engine engine);
+	default void onUnRegisterEngine(Engine engine) {
+	}
 	
 }
