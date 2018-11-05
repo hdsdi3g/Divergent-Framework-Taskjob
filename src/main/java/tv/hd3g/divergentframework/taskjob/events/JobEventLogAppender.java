@@ -16,8 +16,14 @@
 */
 package tv.hd3g.divergentframework.taskjob.events;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -32,6 +38,7 @@ import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.apache.logging.log4j.message.Message;
 
 import tv.hd3g.divergentframework.taskjob.broker.Job;
+import tv.hd3g.divergentframework.taskjob.worker.WorkerThread;
 
 /**
  * Inspired by https://cwiki.apache.org/confluence/display/GEODE/Using+Custom+Log4J2+Appender
@@ -41,29 +48,99 @@ public class JobEventLogAppender extends AbstractAppender {
 	
 	// private static Logger log = LogManager.getLogger();
 	
+	// TODO if job is deleted, remove from logevents_by_job and last_fetch_logevents_date_by_job ...
+	
 	private final ConcurrentHashMap<Job, LinkedBlockingQueue<LogEvent>> logevents_by_job;
-	private final ConcurrentHashMap<Thread, Boolean> monitored_threads;
+	private final ConcurrentHashMap<Job, Long> last_fetch_logevents_date_by_job;
+	
+	private Consumer<Job> onLogEvent;
+	private Executor onLogEvent_executor;
 	
 	public JobEventLogAppender(String name, Filter filter) {
 		super(name, filter, PatternLayout.createDefaultLayout());
 		logevents_by_job = new ConcurrentHashMap<>();
-		monitored_threads = new ConcurrentHashMap<>();
-	}
-	
-	public void monitorThreadToLog(Thread t) {
-		monitored_threads.put(t, true);
-	}
-	
-	public void unMonitorThreadToLog(Thread t) {
-		monitored_threads.remove(t);
+		last_fetch_logevents_date_by_job = new ConcurrentHashMap<>();
 	}
 	
 	public void append(LogEvent event) {
-		if (monitored_threads.containsKey(Thread.currentThread()) == false) {
+		Thread t = Thread.currentThread();
+		if (t instanceof WorkerThread == false) {
 			return;
 		}
-		// XXX create specific and contextual logger, do something custom
-		System.out.println("+++\t" + Thread.currentThread().getName() + "\t\t" + event.getThreadName() + "\t" + event.getMessage().getFormattedMessage());
+		WorkerThread monitored_thread = (WorkerThread) t;
+		
+		if (WorkerThread.class.getName().equals(event.getLoggerName())) {
+			return;
+		}
+		
+		Job job = monitored_thread.getJob();
+		logevents_by_job.computeIfAbsent(job, _job -> {
+			return new LinkedBlockingQueue<>();
+		}).add(event.toImmutable());
+		
+		onLogEvent_executor.execute(() -> {
+			onLogEvent.accept(job);
+		});
+	}
+	
+	public <T> List<T> getAllEvents(Job job, Function<LogEvent, T> modifier) {
+		LinkedBlockingQueue<LogEvent> logevents = logevents_by_job.get(job);
+		
+		if (logevents == null) {
+			return List.of();
+		} else if (logevents.isEmpty()) {
+			return List.of();
+		}
+		
+		List<LogEvent> selected_logevents = logevents.stream().collect(Collectors.toUnmodifiableList());
+		
+		long last_event_date = selected_logevents.get(selected_logevents.size() - 1).getInstant().getEpochMillisecond();
+		
+		last_fetch_logevents_date_by_job.put(job, last_event_date);
+		
+		return selected_logevents.stream().map(modifier).collect(Collectors.toUnmodifiableList());
+	}
+	
+	public <T> List<T> getAllEventsSinceLastFetch(Job job, Function<LogEvent, T> modifier) {
+		LinkedBlockingQueue<LogEvent> logevents = logevents_by_job.get(job);
+		
+		if (logevents == null) {
+			return List.of();
+		} else if (logevents.isEmpty()) {
+			return List.of();
+		}
+		
+		long last_fetch_event_date = last_fetch_logevents_date_by_job.computeIfAbsent(job, _job -> {
+			return 0l;
+		});
+		
+		List<LogEvent> selected_logevents = logevents.stream().dropWhile(event -> {
+			return last_fetch_event_date > event.getInstant().getEpochMillisecond();
+		}).collect(Collectors.toUnmodifiableList());
+		
+		long last_event_date = selected_logevents.get(selected_logevents.size() - 1).getInstant().getEpochMillisecond();
+		
+		last_fetch_logevents_date_by_job.put(job, last_event_date);
+		
+		return selected_logevents.stream().map(modifier).collect(Collectors.toUnmodifiableList());
+	}
+	
+	@Deprecated
+	public Stream<LogEvent> getAllEventsSince(long last_event_date, Job job) {
+		return Stream.empty();
+	}
+	
+	public synchronized JobEventLogAppender setOnLogEvent(Consumer<Job> onLogEvent, Executor onLogEvent_executor) {
+		this.onLogEvent = onLogEvent;
+		if (onLogEvent == null) {
+			throw new NullPointerException("\"onLogEvent\" can't to be null");
+		}
+		this.onLogEvent_executor = onLogEvent_executor;
+		if (onLogEvent_executor == null) {
+			throw new NullPointerException("\"onLogEvent_executor\" can't to be null");
+		}
+		
+		return this;
 	}
 	
 	public static JobEventLogAppender declareAppender() {
@@ -74,10 +151,7 @@ public class JobEventLogAppender extends AbstractAppender {
 		JobEventLogAppender instance = new JobEventLogAppender("WorkerThreadJob", filter);
 		instance.start();
 		
-		config.addAppender(instance);
-		config.getLoggers().values().forEach(logger_config -> {
-			logger_config.addAppender(instance, Level.ALL, filter);
-		});
+		// config.addAppender(instance);
 		config.getRootLogger().addAppender(instance, Level.ALL, filter);
 		
 		return instance;

@@ -11,6 +11,7 @@
 <?import javafx.scene.control.TreeTableView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
 <BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="454.0" prefWidth="1308.0" xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="tv.hd3g.divergentframework.taskjob.gui.GuiController">
@@ -58,6 +59,15 @@
             </SplitPane>
             <TabPane prefHeight="200.0" prefWidth="200.0" tabClosingPolicy="UNAVAILABLE">
               <tabs>
+                  <Tab text="Job log">
+                     <content>
+                        <ScrollPane prefHeight="200.0" prefWidth="200.0">
+                           <content>
+                              <VBox fx:id="vbox_job_log" />
+                           </content>
+                        </ScrollPane>
+                     </content>
+                  </Tab>
                 <Tab text="Job context">
                      <content>
                         <ScrollPane fitToHeight="true" fitToWidth="true">

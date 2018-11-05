@@ -33,6 +33,7 @@ import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.LogEvent;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -42,21 +43,25 @@ import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import tv.hd3g.divergentframework.taskjob.InMemoryLocalTaskJob;
 import tv.hd3g.divergentframework.taskjob.broker.Job;
 import tv.hd3g.divergentframework.taskjob.broker.TaskStatus;
 import tv.hd3g.divergentframework.taskjob.events.EngineEventObserver;
+import tv.hd3g.divergentframework.taskjob.events.JobEventLogAppender;
 import tv.hd3g.divergentframework.taskjob.events.JobEventObserver;
 import tv.hd3g.divergentframework.taskjob.worker.Engine;
 import tv.hd3g.divergentframework.taskjob.worker.WorkerThread;
@@ -65,6 +70,7 @@ public class GuiController {
 	private static Logger log = LogManager.getLogger();
 	
 	private final ExecutorService executor;
+	private JobEventLogAppender job_event_appender;
 	
 	public GuiController() {
 		executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(), r -> {
@@ -287,16 +293,22 @@ public class GuiController {
 				JsonObject jo_context = selected_job.getContextContent();
 				if (jo_context != null) {
 					textarea_job_context.setText(gson.toJson(jo_context));
-					return;
 				}
+				
+				vbox_job_log.getChildren().clear();
+				if (job_event_appender != null) {
+					vbox_job_log.getChildren().addAll(job_event_appender.getAllEvents(selected_job, event -> createVboxJobLogItem(event)));
+				}
+				
+			} else {
+				/**
+				 * No selection, reset optional status/function
+				 */
+				combobox_taskstatus.disableProperty().set(true);
+				combobox_taskstatus.getItems().clear();
+				textarea_job_context.clear();
+				vbox_job_log.getChildren().clear();
 			}
-			
-			/**
-			 * No selection, reset optional status/function
-			 */
-			combobox_taskstatus.disableProperty().set(true);
-			combobox_taskstatus.getItems().clear();
-			textarea_job_context.clear();
 		});
 		
 		/**
@@ -471,6 +483,8 @@ public class GuiController {
 	
 	@FXML
 	private TextArea textarea_job_context;
+	@FXML
+	private VBox vbox_job_log;
 	
 	// TODO2 ContextMenu in tables ?
 	
@@ -742,6 +756,34 @@ public class GuiController {
 		});
 		
 		return Stream.concat(searched_childrens, searched_childs_childrens);
+	}
+	
+	public void linkToLogAppender(JobEventLogAppender job_event_appender) {
+		this.job_event_appender = job_event_appender;
+		if (job_event_appender == null) {
+			throw new NullPointerException("\"job_event_appender\" can't to be null");
+		}
+		
+		job_event_appender.setOnLogEvent(job -> {
+			Platform.runLater(() -> {
+				if (table_job.getSelectionModel().isEmpty()) {
+					return;
+				}
+				Job selected_job = table_job.getSelectionModel().getSelectedItem().getValue();
+				
+				if (job.equals(selected_job) == false) {
+					return;
+				}
+				
+				vbox_job_log.getChildren().addAll(job_event_appender.getAllEventsSinceLastFetch(job, event -> createVboxJobLogItem(event)));
+			});
+		}, executor);
+	}
+	
+	private Node createVboxJobLogItem(LogEvent event) {
+		Label label = new Label(event.getMessage().getFormattedMessage());
+		
+		return label;
 	}
 	
 }

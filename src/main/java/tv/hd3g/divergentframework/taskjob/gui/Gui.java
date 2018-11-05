@@ -35,10 +35,8 @@ import javafx.stage.Stage;
 import tv.hd3g.divergentframework.taskjob.InMemoryLocalTaskJob;
 import tv.hd3g.divergentframework.taskjob.broker.Job;
 import tv.hd3g.divergentframework.taskjob.broker.TaskStatus;
-import tv.hd3g.divergentframework.taskjob.events.EngineEventObserver;
 import tv.hd3g.divergentframework.taskjob.events.JobEventLogAppender;
 import tv.hd3g.divergentframework.taskjob.worker.Engine;
-import tv.hd3g.divergentframework.taskjob.worker.WorkerThread;
 
 public class Gui extends Application {
 	private static Logger log = LogManager.getLogger();
@@ -66,18 +64,8 @@ public class Gui extends Application {
 			System.exit(0);
 		});
 		
-		task_job.addEngineObserver(new EngineEventObserver() {
-			
-			public void onEngineStartProcess(Engine engine, WorkerThread w_t) {
-				job_event_appender.monitorThreadToLog(w_t);
-			}
-			
-			public void onEngineEndsProcess(Engine engine, WorkerThread w_t) {
-				job_event_appender.unMonitorThreadToLog(w_t);
-			}
-		});
-		
 		controller.linkToTaskJob(task_job);
+		controller.linkToLogAppender(job_event_appender);
 		
 		Thread t_demo = new Thread(() -> {
 			try {
@@ -115,6 +103,7 @@ public class Gui extends Application {
 					/**
 					 * Do nothing, just a test.
 					 */
+					log.info("START/END JOB IN DEMO ENGINE 1");
 				};
 			});
 			task_job.registerEngine(engine);
@@ -137,6 +126,11 @@ public class Gui extends Application {
 						}
 						
 						broker.updateProgression(job, i, sleep_time);
+						
+						if (i % 50 == 0) {
+							log.info("Simple message: " + i);
+						}
+						
 						try {
 							Thread.sleep(1);
 						} catch (InterruptedException e) {
