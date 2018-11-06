@@ -26,18 +26,23 @@ public interface JobEventObserver {
 	/**
 	 * Can be triggered just after onJobAfterInit, before the job has to be added to the current job list
 	 */
-	void onJobUpdate(Job job, JobUpdateSubject cause);
+	default void onJobUpdate(Job job, JobUpdateSubject cause) {
+	}
 	
-	void onJobUpdateProgression(Job job);
+	default void onJobUpdateProgression(Job job) {
+	}
 	
 	public enum JobUpdateSubject {
 		SET_EXTERNAL_REFERENCE, SET_LINKED_JOB, SET_CONTEXT_REQUIREMENT_TAGS, SWITCH_TO_ERROR, SWITCH_STATUS, SET_CONTEXT_CONTENT;
 	}
 	
-	void brokerOnAfterFlush(List<UUID> deleted_jobs_uuid);
+	default void brokerOnAfterFlush(List<UUID> deleted_jobs_uuid) {
+	}
 	
-	void brokerOnCreateJob(Job job);
+	default void brokerOnCreateJob(Job job) {
+	}
 	
-	void brokerOnCreateSubJob(Job reference, Job sub_job);
+	default void brokerOnCreateSubJob(Job reference, Job sub_job) {
+	}
 	
 }

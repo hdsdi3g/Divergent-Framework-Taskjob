@@ -494,7 +494,7 @@ public class GuiController {
 		
 		private EventDispatcher(InMemoryLocalTaskJob task_job) {
 			task_job.addEngineObserver(this);
-			task_job.setJobObserver(this);
+			task_job.addJobObserver(this);
 		}
 		
 		/**
@@ -597,6 +597,10 @@ public class GuiController {
 					}
 					item.getParent().getChildren().remove(item);
 				});
+			});
+			
+			executor.execute(() -> {
+				job_event_appender.deleteDatasForJobs(deleted_jobs_uuid);
 			});
 		}
 		
@@ -778,6 +782,7 @@ public class GuiController {
 				vbox_job_log.getChildren().addAll(job_event_appender.getAllEventsSinceLastFetch(job, event -> createVboxJobLogItem(event)));
 			});
 		}, executor);
+		
 	}
 	
 	private Node createVboxJobLogItem(LogEvent event) {

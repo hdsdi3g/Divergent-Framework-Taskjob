@@ -19,6 +19,7 @@ package tv.hd3g.divergentframework.taskjob.broker;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -58,7 +59,8 @@ public class InMemoryBroker implements Broker {
 	private final ScheduledThreadPoolExecutor sch_maintenance_exec;
 	private final ScheduledFuture<?> cleanup_task;
 	
-	private JobEventObserver job_observer;
+	private final InternalDispatcherJobEventObserver job_observer;
+	private final ArrayList<JobEventObserver> job_observer_list;
 	
 	public InMemoryBroker(int max_job_count, long abandoned_jobs_retention_time, long done_jobs_retention_time, long error_jobs_retention_time, TimeUnit unit) {
 		this.max_job_count = max_job_count;
@@ -67,9 +69,12 @@ public class InMemoryBroker implements Broker {
 		this.error_jobs_retention_time = unit.toMillis(error_jobs_retention_time);
 		on_new_local_jobs_activity_callbacks = new ArrayList<>(1);
 		
+		job_observer = new InternalDispatcherJobEventObserver();
+		job_observer_list = new ArrayList<>();
+		
 		executor = new ThreadPoolExecutor(1, 1, 1, TimeUnit.SECONDS, new LinkedBlockingQueue<>(), runnable -> {
 			Thread t = new Thread(runnable);
-			t.setName("BrokerExecutor");
+			t.setName("BrokerExecutor " + new Date());
 			t.setPriority(Thread.MIN_PRIORITY);
 			t.setDaemon(true);
 			return t;
@@ -97,6 +102,39 @@ public class InMemoryBroker implements Broker {
 		}, min_delay_to_update, min_delay_to_update, unit);
 	}
 	
+	private class InternalDispatcherJobEventObserver implements JobEventObserver {
+		public void brokerOnAfterFlush(List<UUID> deleted_jobs_uuid) {
+			job_observer_list.parallelStream().forEach(o -> {
+				o.brokerOnAfterFlush(deleted_jobs_uuid);
+			});
+		}
+		
+		public void brokerOnCreateJob(Job job) {
+			job_observer_list.parallelStream().forEach(o -> {
+				o.brokerOnCreateJob(job);
+			});
+		}
+		
+		public void brokerOnCreateSubJob(Job reference, Job sub_job) {
+			job_observer_list.parallelStream().forEach(o -> {
+				o.brokerOnCreateSubJob(reference, sub_job);
+			});
+		}
+		
+		public void onJobUpdate(Job job, JobUpdateSubject cause) {
+			job_observer_list.parallelStream().forEach(o -> {
+				o.onJobUpdate(job, cause);
+			});
+		}
+		
+		public void onJobUpdateProgression(Job job) {
+			job_observer_list.parallelStream().forEach(o -> {
+				o.onJobUpdateProgression(job);
+			});
+		}
+		
+	}
+	
 	public Optional<RuntimeException> checkStoreConsistency() {
 		return store.checkConsistency();
 	}
@@ -113,8 +151,12 @@ public class InMemoryBroker implements Broker {
 	/**
 	 * @return this
 	 */
-	public InMemoryBroker setJobObserver(JobEventObserver job_observer) {
-		this.job_observer = job_observer;
+	public InMemoryBroker addJobObserver(JobEventObserver job_observer) {
+		if (job_observer == null) {
+			throw new NullPointerException("\"job_observer\" can't to be null");
+		}
+		
+		job_observer_list.add(job_observer);
 		return this;
 	}
 	

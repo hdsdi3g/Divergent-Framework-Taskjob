@@ -17,13 +17,13 @@
 package tv.hd3g.divergentframework.taskjob.events;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -47,8 +47,6 @@ import tv.hd3g.divergentframework.taskjob.worker.WorkerThread;
 public class JobEventLogAppender extends AbstractAppender {
 	
 	// private static Logger log = LogManager.getLogger();
-	
-	// TODO if job is deleted, remove from logevents_by_job and last_fetch_logevents_date_by_job ...
 	
 	private final ConcurrentHashMap<Job, LinkedBlockingQueue<LogEvent>> logevents_by_job;
 	private final ConcurrentHashMap<Job, Long> last_fetch_logevents_date_by_job;
@@ -115,7 +113,7 @@ public class JobEventLogAppender extends AbstractAppender {
 		});
 		
 		List<LogEvent> selected_logevents = logevents.stream().dropWhile(event -> {
-			return last_fetch_event_date > event.getInstant().getEpochMillisecond();
+			return last_fetch_event_date + 1 > event.getInstant().getEpochMillisecond();
 		}).collect(Collectors.toUnmodifiableList());
 		
 		long last_event_date = selected_logevents.get(selected_logevents.size() - 1).getInstant().getEpochMillisecond();
@@ -123,11 +121,6 @@ public class JobEventLogAppender extends AbstractAppender {
 		last_fetch_logevents_date_by_job.put(job, last_event_date);
 		
 		return selected_logevents.stream().map(modifier).collect(Collectors.toUnmodifiableList());
-	}
-	
-	@Deprecated
-	public Stream<LogEvent> getAllEventsSince(long last_event_date, Job job) {
-		return Stream.empty();
 	}
 	
 	public synchronized JobEventLogAppender setOnLogEvent(Consumer<Job> onLogEvent, Executor onLogEvent_executor) {
@@ -141,6 +134,13 @@ public class JobEventLogAppender extends AbstractAppender {
 		}
 		
 		return this;
+	}
+	
+	public void deleteDatasForJobs(List<UUID> deleted_jobs) {
+		logevents_by_job.keySet().stream().filter(job -> deleted_jobs.contains(job.getKey())).collect(Collectors.toUnmodifiableList()).forEach(job -> {
+			logevents_by_job.remove(job);
+			last_fetch_logevents_date_by_job.remove(job);
+		});
 	}
 	
 	public static JobEventLogAppender declareAppender() {

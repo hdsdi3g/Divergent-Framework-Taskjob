@@ -229,7 +229,7 @@ public class TestSimpleEventObserver extends TestCase {
 		TestJobObserver job_observer = new TestJobObserver();
 		
 		task_job.addEngineObserver(engine_observer);
-		task_job.setJobObserver(job_observer);
+		task_job.addJobObserver(job_observer);
 		
 		engine_observer.setReference(task_job.registerGenericEngine(1, "DogEngine", gson, Dog.class, () -> {
 			return (referer, context, broker, shouldStopProcessing) -> {
