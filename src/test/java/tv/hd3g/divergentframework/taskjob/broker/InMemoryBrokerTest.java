@@ -406,7 +406,7 @@ public class InMemoryBrokerTest extends TestCase {
 	
 	public void testParallel() throws Exception {
 		
-		InMemoryBroker broker = new InMemoryBroker(100_000, 1, 1, 1, TimeUnit.SECONDS);
+		InMemoryBroker broker = new InMemoryBroker(100_000, 10, 10, 10, TimeUnit.SECONDS);
 		
 		final int CPU_COUNT = Math.max(Runtime.getRuntime().availableProcessors(), 2);
 		

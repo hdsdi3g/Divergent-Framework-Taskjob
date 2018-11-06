@@ -54,6 +54,7 @@ public class InMemoryLocalTaskJob extends InMemoryBroker implements Queue {
 	 * @return this
 	 */
 	public InMemoryLocalTaskJob addEngineObserver(EngineEventObserver engine_observer) {
+		log.debug("Register engine observer in queue: " + engine_observer);
 		queue.addEngineObserver(engine_observer);
 		return this;
 	}
@@ -86,6 +87,7 @@ public class InMemoryLocalTaskJob extends InMemoryBroker implements Queue {
 	}
 	
 	public CompletableFuture<Void> prepareToStop(Executor executor) {
+		log.debug("Prepare to stop");
 		cancelCleanUpTask();
 		return queue.prepareToStop(executor);
 	}
@@ -103,6 +105,8 @@ public class InMemoryLocalTaskJob extends InMemoryBroker implements Queue {
 	}
 	
 	public void switchStatus(Job job, TaskStatus new_status) {
+		log.debug("Set switchStatus for job " + job + ": " + new_status);
+		
 		super.switchStatus(job, new_status);
 		
 		if (TaskStatus.WAITING.equals(new_status)) {

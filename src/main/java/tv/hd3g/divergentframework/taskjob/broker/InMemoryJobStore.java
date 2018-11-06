@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiFunction;
@@ -149,12 +150,18 @@ class InMemoryJobStore {
 	
 	/**
 	 * @param target supplier call is in internal lock
-	 * @return false if job was deleted
+	 * @throws NullPointerException if it can't found job
 	 */
-	boolean update(Supplier<UUID> target) {
-		return syncWrite(() -> {
-			return updateInternalSets(target.get());
-		});
+	void update(Supplier<UUID> target) throws NullPointerException {
+		AtomicReference<UUID> job_uuid = new AtomicReference<>();
+		
+		if (syncWrite(() -> {
+			UUID uuid = target.get();
+			job_uuid.set(uuid);
+			return updateInternalSets(uuid);
+		}) == false) {
+			throw new NullPointerException("Can't found Job " + job_uuid.get());
+		}
 	}
 	
 	Job getByUUID(UUID uuid) {

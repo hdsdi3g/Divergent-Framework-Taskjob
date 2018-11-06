@@ -74,7 +74,7 @@ public class TestLocalTaskJob extends TestCase {
 		
 		ArrayList<Dog> captured_dogs = new ArrayList<>(1);
 		
-		InMemoryLocalTaskJob task_job = new InMemoryLocalTaskJob(10, 10, 10, 10, TimeUnit.MILLISECONDS);
+		InMemoryLocalTaskJob task_job = new InMemoryLocalTaskJob(10, 500, 500, 500, TimeUnit.MILLISECONDS);
 		
 		task_job.registerGenericEngine(1, "DogEngine", gson, Dog.class, () -> {
 			return (referer, context, broker, shouldStopProcessing) -> {
@@ -84,7 +84,7 @@ public class TestLocalTaskJob extends TestCase {
 		
 		Job job = task_job.createGenericJob("D", "", dogo, null, gson);
 		
-		System.out.println(job.getContextContent());
+		System.out.println("Contex content: " + job.getContextContent());
 		
 		assertEquals(dogo, gson.fromJson(job.getContextContent(), Dog.class));
 		

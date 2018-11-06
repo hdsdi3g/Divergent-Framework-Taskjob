@@ -136,10 +136,12 @@ public class InMemoryBroker implements Broker {
 	}
 	
 	public Optional<RuntimeException> checkStoreConsistency() {
+		log.debug("Start checkStoreConsistency");
 		return store.checkConsistency();
 	}
 	
 	public InMemoryBroker cancelCleanUpTask() {
+		log.info("Cancel clean-up regular task");
 		cleanup_task.cancel(false);
 		return this;
 	}
@@ -156,6 +158,8 @@ public class InMemoryBroker implements Broker {
 			throw new NullPointerException("\"job_observer\" can't to be null");
 		}
 		
+		log.debug("Register new job_observer: " + job_observer);
+		
 		job_observer_list.add(job_observer);
 		return this;
 	}
@@ -164,6 +168,8 @@ public class InMemoryBroker implements Broker {
 	 * @return this
 	 */
 	public InMemoryBroker flush() {
+		log.trace("Start flush");
+		
 		List<UUID> deleted_jobs_uuid = store.computeAllAndRemove((stream, uuid_resolver) -> {
 			return stream.filter(job -> {
 				if (job.getStatus().equals(TaskStatus.PROCESSING)) {
@@ -217,6 +223,14 @@ public class InMemoryBroker implements Broker {
 			});
 		});
 		
+		if (log.isDebugEnabled() && deleted_jobs_uuid.isEmpty() == false) {
+			if (log.isTraceEnabled()) {
+				log.trace("Flush has deleted jobs: " + deleted_jobs_uuid);
+			} else {
+				log.debug("Flush has deleted " + deleted_jobs_uuid.size() + " job(s)");
+			}
+		}
+		
 		if (job_observer != null & deleted_jobs_uuid.isEmpty() == false) {
 			job_observer.brokerOnAfterFlush(deleted_jobs_uuid);
 		}
@@ -246,36 +260,27 @@ public class InMemoryBroker implements Broker {
 	}
 	
 	public void updateProgression(Job job, int actual_value, int max_value) {
-		boolean ok = store.update(() -> {
-			return job.updateProgression(actual_value, max_value).getKey();
-		});
-		if (ok == false) {
-			log.trace("Can't update job ", () -> job);
-		} else if (log.isTraceEnabled()) {
+		if (log.isTraceEnabled()) {
 			log.trace("Update job progression: " + actual_value + "/" + max_value + " for " + job);
 		}
+		store.update(() -> {
+			return job.updateProgression(actual_value, max_value).getKey();
+		});
 	}
 	
 	public void switchToError(Job job, Throwable e) {
-		boolean ok = store.update(() -> {
+		log.debug("Switch Job " + job + " in error", e);
+		store.update(() -> {
 			return job.switchToError(e).getKey();
 		});
-		if (ok == false) {
-			log.debug("Job " + job + " is switched in error", e);
-		} else {
-			log.warn("Can't update job ", () -> job);
-		}
+		
 	}
 	
 	public void switchStatus(Job job, TaskStatus new_status) {
-		boolean ok = store.update(() -> {
+		log.debug("Switch status for job ", () -> job);
+		store.update(() -> {
 			return job.switchStatus(new_status).getKey();
 		});
-		if (ok) {
-			log.debug("Switch status for job ", () -> job);
-		} else {
-			log.warn("Can't update job " + job);
-		}
 	}
 	
 	public <T> Job createGenericJob(String description, String external_reference, T context, Collection<String> context_requirement_tags, Gson gson) {
@@ -354,6 +359,10 @@ public class InMemoryBroker implements Broker {
 	}
 	
 	public void getNextJobs(List<String> list_to_context_types, IntSupplier queue_capacity, BiPredicate<String, List<String>> filterByContextTypeAndTags, Predicate<Job> onFoundJobReadyToStart) {
+		if (log.isTraceEnabled()) {
+			log.trace("Do getNextJobs for " + list_to_context_types);
+		}
+		
 		HashSet<String> set_context_types = new HashSet<>(list_to_context_types);
 		
 		List<Job> pre_selected_jobs = store.computeAndUpdate(TaskStatus.WAITING, (stream, job_by_uuid_resolver) -> {
@@ -406,19 +415,20 @@ public class InMemoryBroker implements Broker {
 			job.switchStatus(TaskStatus.PREPARING);
 		});
 		
+		if (log.isTraceEnabled()) {
+			log.trace("pre_selected_jobs raw list: " + pre_selected_jobs);
+		}
+		
 		pre_selected_jobs.stream().filter(preparing_job -> {
 			return onFoundJobReadyToStart.test(preparing_job) == false;
 		}).forEach(rejected_preparing_job -> {
-			boolean put_ok = store.update(() -> {
+			store.update(() -> {
 				/**
 				 * Finally, this job can't to be process now. Re-switch to waiting.
 				 */
 				rejected_preparing_job.switchStatus(TaskStatus.WAITING);
 				return rejected_preparing_job.getKey();
 			});
-			if (put_ok == false) {
-				throw new RuntimeException("Can't put new job status " + rejected_preparing_job);
-			}
 		});
 	}
 	

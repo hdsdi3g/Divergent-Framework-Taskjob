@@ -51,9 +51,9 @@ public class TestJobStore extends TestCase {
 		assertEquals(0, store.getJobsByTaskStatus(TaskStatus.WAITING).size());
 		assertEquals(0, store.getJobsByTaskStatus(TaskStatus.POSTPONED).size());
 		
-		assertTrue(store.update(() -> {
+		store.update(() -> {
 			return job.getKey();
-		}));
+		});
 		
 		assertEquals(0, store.getJobsByTaskStatus(TaskStatus.WAITING).size());
 		assertEquals(1, store.getJobsByTaskStatus(TaskStatus.POSTPONED).size());
