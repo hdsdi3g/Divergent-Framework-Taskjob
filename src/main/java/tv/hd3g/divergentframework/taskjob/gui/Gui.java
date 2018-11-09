@@ -54,7 +54,7 @@ public class Gui extends Application {
 		
 		JobEventLogAppender job_event_appender = JobEventLogAppender.declareAppender();
 		
-		task_job = new InMemoryLocalTaskJob(1000, 80, 80, 80, TimeUnit.SECONDS);// TODO3 externalize this
+		task_job = new InMemoryLocalTaskJob(1000, 20, 20, 20, TimeUnit.SECONDS);// TODO3 externalize this
 		controller.startApp(primary_stage, root, task_job, () -> {
 			try {
 				task_job.prepareToStop(r -> r.run()).get();
