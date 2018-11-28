@@ -41,7 +41,8 @@ import tv.hd3g.divergentframework.taskjob.broker.Job;
 import tv.hd3g.divergentframework.taskjob.worker.WorkerThread;
 
 /**
- * Inspired by https://cwiki.apache.org/confluence/display/GEODE/Using+Custom+Log4J2+Appender
+ * Capture and keep specific job's logs.
+ * Some parts inspired by https://cwiki.apache.org/confluence/display/GEODE/Using+Custom+Log4J2+Appender
  */
 @Plugin(name = "Basic", category = "Core", elementType = "appender", printObject = true)
 public class JobEventLogAppender extends AbstractAppender {
@@ -58,16 +59,30 @@ public class JobEventLogAppender extends AbstractAppender {
 		super(name, filter, PatternLayout.createDefaultLayout());
 		logevents_by_job = new ConcurrentHashMap<>();
 		last_fetch_logevents_date_by_job = new ConcurrentHashMap<>();
+		
+		/*Executors.newScheduledThreadPool(1).scheduleAtFixedRate(() -> {
+			System.out.println(logevents_by_job.size() + ", " + last_fetch_logevents_date_by_job.size()+ " #Jobs");
+		}, 1, 1, TimeUnit.SECONDS);*/
+	}
+	
+	public JobEventLogAppender() {
+		this("WorkerThreadJob", new LocalFilter());
 	}
 	
 	public void append(LogEvent event) {
 		Thread t = Thread.currentThread();
 		if (t instanceof WorkerThread == false) {
+			/**
+			 * Ignore not WorkerThread logger source -> not a working job here
+			 */
 			return;
 		}
 		WorkerThread monitored_thread = (WorkerThread) t;
 		
 		if (WorkerThread.class.getName().equals(event.getLoggerName())) {
+			/**
+			 * Ignore WorkerThread itself logs.
+			 */
 			return;
 		}
 		
@@ -147,12 +162,11 @@ public class JobEventLogAppender extends AbstractAppender {
 		final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
 		final org.apache.logging.log4j.core.config.Configuration config = ctx.getConfiguration();
 		
-		LocalFilter filter = new LocalFilter();
-		JobEventLogAppender instance = new JobEventLogAppender("WorkerThreadJob", filter);
+		JobEventLogAppender instance = new JobEventLogAppender();
 		instance.start();
 		
 		// config.addAppender(instance);
-		config.getRootLogger().addAppender(instance, Level.ALL, filter);
+		config.getRootLogger().addAppender(instance, Level.ALL, instance.getFilter());
 		
 		return instance;
 	}
